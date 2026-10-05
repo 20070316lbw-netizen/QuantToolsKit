@@ -66,4 +66,5 @@ PRICES_DDL = """
         close DOUBLE NOT NULL,
         adj_close DOUBLE,
         volume DOUBLE,
-    PRIMARY KEY(ticker,date))"""
+    PRIMARY KEY(ticker,date))
+    """

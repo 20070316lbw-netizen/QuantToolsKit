@@ -2,6 +2,16 @@
 
 [返回项目首页](../../../README.md)
 
+## 阅读导航
+
+本页介绍数据准备、获取与入库。数据已经入库后，查看
+[详细调用指南](USAGE.md)：接口选择、参数含义、整个 SP500 的 panel + TTM 查询、
+结果合并及缺失数据检查。
+
+- 首次使用：从下方「SEC 压缩包下载」和「快速开始」开始。
+- 已有数据库：[整个 SP500 的 panel + TTM 示例](USAGE.md#整个-sp500同时使用-panel--ttm)。
+- 不确定用哪个函数：[读取接口怎么选](USAGE.md#读取接口怎么选)。
+
 - [SEC 压缩包下载](#sec-压缩包下载)
 - [快速开始](#快速开始)
 - [成员快照](#成员快照)
@@ -110,6 +120,8 @@ universe = load_members(snapshot_path)
 
 ## 数据库查询
 
+完整调用与结果处理见 [详细调用指南](USAGE.md)，下面只展示最小查询。
+
 字段筛选和 PIT/TTM 在数据库读取时进行：
 
 ```python
@@ -150,6 +162,8 @@ SYF/TFC 收入口径缺口仍保留，未自动合成银行收入。
 
 ```text
 src/quanttoolskit/data/
+├── README.md                # 准备、获取与入库入口
+├── USAGE.md                 # 详细调用与 SP500 查询示例
 ├── sp500.py                 # SP500Data
 ├── universe.py              # 成员准备与 CIK 映射
 ├── connection.py
@@ -180,8 +194,13 @@ src/quanttoolskit/data/
 原有大库只用于只读比较。49 条原始异常在推导前隔离；旧实验库另有 1 条从异常
 累计值推导出的异常季度，新流程不再生成它。
 
-收尾检查包含 28 项自动化测试、Ruff 检查与格式检查、锁文件离线同步、源码包和 wheel
-构建，以及 wheel 独立目录导入。实网验证 `prepare_members()` 返回 503 只且无缺失 CIK；
-同一入口获取 AAPL/MSFT 四个交易日共 8 行行情，复权价齐全。
+本目录的测试为 [tests/test_market_data.py](../../../tests/test_market_data.py)（26 项）、
+[tests/test_preprocessing.py](../../../tests/test_preprocessing.py)（2 项）和
+[tests/test_transfer_data.py](../../../tests/test_transfer_data.py)（16 项），共 44 项，
+覆盖成员准备、SEC 归一化、事务写入、schema 契约、数据库读取、预处理和 prices 长表归一化。
+
+仓库级的 Ruff、格式检查、锁文件同步和构建校验由根目录 CI 负责，本页只记录本目录的验证。
+实网验证 `prepare_members()` 返回 503 只且无缺失 CIK；同一入口获取 AAPL/MSFT
+四个交易日共 8 行行情，复权价齐全。
 完整验证脚本在 `chores/validate_toolkit.py`，统计保存到
 `chores/data/toolkit_closeout_report.json`；脚本用实验成员快照对照，避免实时名单变化干扰比较。

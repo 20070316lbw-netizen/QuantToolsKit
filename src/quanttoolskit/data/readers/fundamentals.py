@@ -4,7 +4,7 @@ fundamentals 表保存同一期间的所有申报版本(原始申报、后续作
 重述), 每个版本带申报日 filed。"在时点 t 能看到的数据"定义为 filed <= t 的版本中
 最新申报的那个——这样回测时不会用到当时还没公布、或者后来才改过的数字。
 
-filed 的精度只有日期。本接口提供按申报日期的 PIT；盘中信号需另核验提交与公开时刻。
+filed 的精度只有日期。本接口提供按申报日期的 PIT; 盘中信号需另核验提交与公开时刻。
 
 提供四个层次的查询:
     load_fundamentals        -- 原始版本行, 不做 as-of 取舍(核对/调试用)
@@ -93,7 +93,7 @@ def load_fundamentals(
     """读取原始版本行(同一期间可能有多行), 不做 as-of 取舍。
 
     Args:
-        tickers: 单个或多个 ticker，统一大写和短横线；None 不限，空序列不匹配。
+        tickers: 单个或多个 ticker, 统一大写和短横线; None 不限，空序列不匹配。
         fields: 单个或多个标准字段(如 "revenue"), 默认不限。
         start: period_end 下限(含)。
         end: period_end 上限(含)。

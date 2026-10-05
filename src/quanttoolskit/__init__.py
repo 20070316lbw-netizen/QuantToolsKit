@@ -2,8 +2,18 @@
 
 from loguru import logger
 
+from .returns import future_returns, historical_return
+from .volatility import forward_volatility, history_vol
+
 # 库不替宿主决定日志: 默认关闭本包输出, 避免污染使用方的 stderr
 # (loguru 官方对库的建议就是 disable)。需要排查问题时, 在 import 之后显式打开:
 #     from loguru import logger
 #     logger.enable("quanttoolskit")
 logger.disable("quanttoolskit")
+
+__all__ = [
+    "forward_volatility",
+    "future_returns",
+    "historical_return",
+    "history_vol",
+]
