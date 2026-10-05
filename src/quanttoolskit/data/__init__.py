@@ -12,7 +12,7 @@ from .readers.fundamentals import (
 )
 from .readers.prices import load_prices
 from .sp500 import SP500Data
-from .transfer_data import transfer_prices
+from .transfer_data import to_date_ticker_frame, validate_prices
 from .universe import load_members, prepare_members
 
 __all__ = [
@@ -28,5 +28,6 @@ __all__ = [
     "load_prices",
     "prepare_members",
     "set_datetime_index",
-    "transfer_prices",
+    "to_date_ticker_frame",
+    "validate_prices",
 ]

@@ -100,7 +100,7 @@ ttm = load_fundamentals_ttm(
     db=db,
 )
 
-# 长表适合检查来源；转宽表后方便按股票计算。
+# 读取边界返回原始长表；进入量化计算前统一成 date/ticker MultiIndex DataFrame。
 # 明确筛选 period_months=0，因此 panel 的每个 date/ticker/field 唯一。
 keys = ["date", "ticker"]
 balances = panel.pivot(index=keys, columns="field", values="value")
@@ -135,10 +135,10 @@ features = features.join(flow_ends.add_suffix("_ttm_period_end"))
 coverage = features[expected].notna().groupby(level="date").sum()
 print("成员数量：", len(tickers))
 print("各日期、各字段有效股票数：\n", coverage)
-print(features.reset_index().head())
+print(features.head())
 ```
 
-无需逐只股票循环。`panel` 和 `ttm` 返回长表，`features` 是合并后的宽表。
+无需逐只股票循环。`panel` 和 `ttm` 返回长表，`features` 是后续计算使用的 MultiIndex DataFrame（字段为列，股票为索引）。
 TTM 返回的 `period_end` 是四个季度中最新季度的截止日，不含各季度的 `filed`；
 需要核对组成季度时，使用下方 `pit(latest_only=False, period_months=3)`。
 

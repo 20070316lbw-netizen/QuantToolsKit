@@ -194,13 +194,31 @@ src/quanttoolskit/data/
 原有大库只用于只读比较。49 条原始异常在推导前隔离；旧实验库另有 1 条从异常
 累计值推导出的异常季度，新流程不再生成它。
 
-本目录的测试为 [tests/test_market_data.py](../../../tests/test_market_data.py)（26 项）、
-[tests/test_preprocessing.py](../../../tests/test_preprocessing.py)（2 项）和
-[tests/test_transfer_data.py](../../../tests/test_transfer_data.py)（16 项），共 44 项，
-覆盖成员准备、SEC 归一化、事务写入、schema 契约、数据库读取、预处理和 prices 长表归一化。
+本目录的测试为 [tests/test_market_data.py](../../../tests/test_market_data.py)、
+[tests/test_preprocessing.py](../../../tests/test_preprocessing.py)和
+[tests/test_transfer_data.py](../../../tests/test_transfer_data.py)，
+覆盖成员准备、SEC 归一化、事务写入、schema 契约、数据库读取、预处理和行情 MultiIndex DataFrame 转换。
 
 仓库级的 Ruff、格式检查、锁文件同步和构建校验由根目录 CI 负责，本页只记录本目录的验证。
 实网验证 `prepare_members()` 返回 503 只且无缺失 CIK；同一入口获取 AAPL/MSFT
 四个交易日共 8 行行情，复权价齐全。
 完整验证脚本在 `chores/validate_toolkit.py`，统计保存到
 `chores/data/toolkit_closeout_report.json`；脚本用实验成员快照对照，避免实时名单变化干扰比较。
+
+## 读取后统一数据结构
+
+量化计算统一使用 `[date, ticker]` MultiIndex DataFrame，规则见
+[项目约定](../../../docs/data-structure.md)。行情读取示例：
+
+```python
+from quanttoolskit.data import load_prices, to_date_ticker_frame
+
+prices = to_date_ticker_frame(df=load_prices(db="data/sp500.db"))
+# date/ticker 为索引，其余行情列保留，可直接传入收益率和波动率函数。
+```
+
+`to_date_ticker_frame(df=...)` 是通用转换入口；`validate_prices` 只接受已转换的
+DataFrame，校验指定价格列（默认 close），保留索引顺序与数据列，不转换索引。
+两者都不修改输入；收益率和波动率内部调用 `validate_prices`，一般只需显式转换索引。
+`set_datetime_index` 也返回双层索引，要求提供 ticker。
+基本面原始版本表须先筛选和透视，不能直接丢弃字段、期间或版本维度。

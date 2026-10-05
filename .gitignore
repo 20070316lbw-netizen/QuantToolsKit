@@ -18,3 +18,9 @@ wheels/
 *.db.wal
 *.duckdb
 *.duckdb.wal
+
+# Coverage reports
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/

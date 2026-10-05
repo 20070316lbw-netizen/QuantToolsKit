@@ -11,6 +11,7 @@ def test_set_datetime_index_sucess():
     fake_df = pd.DataFrame(
         {
             "date": ["2023-01-03", "2023-01-01", "2023-01-02"],
+            "ticker": ["A", "A", "A"],
             "adj_close": [150.0, 100.0, 120.0],
         }
     )
@@ -19,10 +20,10 @@ def test_set_datetime_index_sucess():
     assert fake_df["date"].tolist() == ["2023-01-03", "2023-01-01", "2023-01-02"]
     assert isinstance(fake_df.index, pd.RangeIndex)
 
-    assert isinstance(result_df.index, pd.DatetimeIndex)
+    assert isinstance(result_df.index, pd.MultiIndex)
     assert len(result_df) == 3
-    assert result_df.index[0].strftime("%Y-%m-%d") == "2023-01-01"
-    assert result_df.loc["2023-01-02", "adj_close"] == 120
+    assert result_df.index[0][0].strftime("%Y-%m-%d") == "2023-01-01"
+    assert result_df.loc[(pd.Timestamp("2023-01-02"), "A"), "adj_close"] == 120
 
 
 def test_set_datetime_index_missing_column():

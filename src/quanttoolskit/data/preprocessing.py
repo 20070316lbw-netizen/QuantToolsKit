@@ -1,27 +1,17 @@
-"""数据预处理工具"""
-
-from __future__ import annotations
+"""数据预处理工具。"""
 
 import pandas as pd
 
+from .transfer_data import to_date_ticker_frame
+
 
 def set_datetime_index(df: pd.DataFrame, date_col: str = "date") -> pd.DataFrame:
+    """兼容原函数名：现返回 (date, ticker) MultiIndex，必须提供 ticker。
+
+    自定义日期列会改名为 date；新代码建议直接使用 to_date_ticker_frame。
     """
-    将数据框的日期列转换为 DatetimeIndex, 并按时间顺序排序。
-    (Time-series preprocessing: parse, set index, and sort chronologically.)
-
-    Args:
-        df: 原始数据框，必须包含 date_col 指定的列
-        date_col: 日期列的列名，默认为 'date'
-
-    Returns:
-        pd.DataFrame: 处理后的数据框，索引为 DatetimeIndex；不修改输入数据框。
-    """
-    if date_col not in df.columns:
-        raise ValueError(f"数据中找不到列: {date_col}")
-
-    df = df.copy()
-    df[date_col] = pd.to_datetime(df[date_col])
-    df = df.set_index(date_col).sort_index()
-
-    return df
+    if date_col != "date":
+        if "date" in df.columns:
+            raise ValueError("自定义日期列不能与已有 date 列冲突")
+        df = df.rename(columns={date_col: "date"})
+    return to_date_ticker_frame(df=df)
