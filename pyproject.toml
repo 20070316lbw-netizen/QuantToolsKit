@@ -1,8 +1,10 @@
 [project]
 name = "quanttoolskit"
 version = "0.1.0"
-description = "Add your description here"
+description = "个人量化工具箱：成员、行情、SEC 基本面获取与 DuckDB 点时查询"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "20070316lbw-netizen", email = "lbw20070316lbw@outlook.com" }
 ]
@@ -12,18 +14,36 @@ dependencies = [
     "loguru>=0.7.3",
     "numpy>=2.5.3",
     "pandas>=3.0.6",
-    "pyyaml>=6.0.3",
+    "pyarrow>=21.0.0",
+    "lxml>=5.0",
+    "yfinance>=1.7.0",
 ]
-
-[project.scripts]
-quanttoolskit = "quanttoolskit:main"
 
 [build-system]
 requires = ["uv_build>=0.12.22,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+source-include = ["scripts/**", "examples/**", "tests/**"]
 
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
     "ruff>=0.16.10",
 ]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "RUF"]
+ignore = [
+    # 中文注释与文档里的全角标点是刻意的, 不是需要替换的易混淆字符
+    "RUF001",
+    "RUF002",
+    "RUF003",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

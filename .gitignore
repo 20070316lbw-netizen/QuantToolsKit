@@ -11,3 +11,10 @@ wheels/
 
 .ruff_cache
 .pytest_cache
+
+# Local research inputs and databases
+/data/
+*.db
+*.db.wal
+*.duckdb
+*.duckdb.wal
