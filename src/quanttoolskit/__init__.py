@@ -2,7 +2,7 @@
 
 from loguru import logger
 
-from .returns import future_returns, historical_return
+from .returns import future_returns, historical_return, log_returns
 from .volatility import forward_volatility, history_vol
 
 # 库不替宿主决定日志: 默认关闭本包输出, 避免污染使用方的 stderr
@@ -16,4 +16,5 @@ __all__ = [
     "future_returns",
     "historical_return",
     "history_vol",
+    "log_returns",
 ]

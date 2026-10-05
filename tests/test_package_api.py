@@ -53,7 +53,25 @@ def test_functions_are_usable_through_the_package_root():
 
     # 8 条记录: 未来收益要 t+3 有价 -> 5 个; 历史收益回看 2 期 -> 6 个;
     # 波动率窗口 3 -> 5 个; 未来波动要 t+4 有滚动值 -> 4 个。
-    assert future_returns(df=frame, n_periods=2, gap=1).notna().sum().iloc[0] == 5
-    assert historical_return(df=frame, n_periods=2).notna().sum().iloc[0] == 6
-    assert history_vol(df=frame, window=3).notna().sum().iloc[0] == 5
-    assert forward_volatility(df=frame, window=3, gap=1).notna().sum().iloc[0] == 4
+    assert (
+        future_returns(df=frame, price_col="close", n_periods=2, gap=1)
+        .notna()
+        .sum()
+        .iloc[0]
+        == 5
+    )
+    assert (
+        historical_return(df=frame, price_col="close", n_periods=2)
+        .notna()
+        .sum()
+        .iloc[0]
+        == 6
+    )
+    assert history_vol(df=frame, price_col="close", window=3).notna().sum().iloc[0] == 5
+    assert (
+        forward_volatility(df=frame, price_col="close", window=3, gap=1)
+        .notna()
+        .sum()
+        .iloc[0]
+        == 4
+    )

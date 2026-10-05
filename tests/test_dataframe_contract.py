@@ -8,10 +8,19 @@ from quanttoolskit import (
     future_returns,
     historical_return,
     history_vol,
+    log_returns,
 )
 from quanttoolskit.data import to_date_ticker_frame
+from quanttoolskit.factors import momentum_12_1
 
-FUNCTIONS = [future_returns, historical_return, history_vol, forward_volatility]
+FUNCTIONS = [
+    future_returns,
+    historical_return,
+    history_vol,
+    forward_volatility,
+    log_returns,
+    momentum_12_1,
+]
 
 
 @pytest.mark.parametrize("function", FUNCTIONS)
@@ -24,7 +33,7 @@ def test_calculations_require_multiindex(function):
 @pytest.mark.parametrize("function", FUNCTIONS)
 def test_empty_calculation_retains_dataframe_schema(function):
     raw = pd.DataFrame(columns=["date", "ticker", "close"])
-    result = function(df=to_date_ticker_frame(df=raw))
+    result = function(df=to_date_ticker_frame(df=raw), price_col="close")
     assert isinstance(result, pd.DataFrame)
     assert result.empty
     assert result.shape[1] == 1
@@ -42,9 +51,9 @@ def test_features_join_and_input_is_unchanged():
     ).sample(frac=1, random_state=7)
     prices = to_date_ticker_frame(df=raw)
     before = prices.copy(deep=True)
-    results = [function(df=prices) for function in FUNCTIONS]
+    results = [function(df=prices, price_col="close") for function in FUNCTIONS]
     features = pd.concat(results, axis=1)
-    assert features.shape == (16, 4)
+    assert features.shape == (16, len(FUNCTIONS))
     assert features.index.equals(prices.index)
     assert features.columns.is_unique
     pd.testing.assert_frame_equal(prices, before)

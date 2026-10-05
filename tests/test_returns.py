@@ -30,7 +30,7 @@ def _frame(prices=None, ticker="A"):
 
 def test_future_returns_matches_manual_formula():
     """label[t] = price[t + gap + n] / price[t + gap] - 1, 尾部记录不足为 NaN。"""
-    result = future_returns(df=_frame(), n_periods=2, gap=1)
+    result = future_returns(df=_frame(), price_col="close", n_periods=2, gap=1)
 
     expected = [
         PRICES[3] / PRICES[1] - 1,
@@ -50,7 +50,7 @@ def test_future_returns_matches_manual_formula():
 
 def test_future_returns_gap_zero_starts_today():
     """gap=0 时用当天收盘价入场。"""
-    result = future_returns(df=_frame(), n_periods=2, gap=0)
+    result = future_returns(df=_frame(), price_col="close", n_periods=2, gap=0)
 
     assert result.iloc[0, 0] == pytest.approx(PRICES[2] / PRICES[0] - 1)
     assert result.iloc[3, 0] == pytest.approx(PRICES[5] / PRICES[3] - 1)
@@ -62,7 +62,7 @@ def test_future_returns_index_is_sorted():
     """输出固定按 (date, ticker) 排序, 与入参顺序无关。"""
     shuffled = _frame().sample(frac=1.0, random_state=7)
 
-    result = future_returns(df=shuffled, n_periods=2, gap=1)
+    result = future_returns(df=shuffled, price_col="close", n_periods=2, gap=1)
 
     assert result.index.is_monotonic_increasing
     assert result.index.equals(result.sort_index().index)
@@ -74,8 +74,8 @@ def test_future_returns_unsorted_input_matches_sorted_input():
     shuffled = sorted_df.sample(frac=1.0, random_state=42)
 
     pd.testing.assert_frame_equal(
-        future_returns(df=shuffled, n_periods=2, gap=1),
-        future_returns(df=sorted_df, n_periods=2, gap=1),
+        future_returns(df=shuffled, price_col="close", n_periods=2, gap=1),
+        future_returns(df=sorted_df, price_col="close", n_periods=2, gap=1),
     )
 
 
@@ -85,7 +85,7 @@ def test_future_returns_does_not_leak_across_tickers():
     second = _frame(prices=OTHER_PRICES, ticker="B")
     combined = pd.concat([first, second])
 
-    result = future_returns(df=combined, n_periods=2, gap=1)
+    result = future_returns(df=combined, price_col="close", n_periods=2, gap=1)
 
     assert result.index.is_unique
     assert len(result) == len(PRICES) * 2
@@ -97,8 +97,8 @@ def test_future_returns_does_not_leak_across_tickers():
     )
     per_ticker = pd.concat(
         [
-            future_returns(df=first, n_periods=2, gap=1),
-            future_returns(df=second, n_periods=2, gap=1),
+            future_returns(df=first, price_col="close", n_periods=2, gap=1),
+            future_returns(df=second, price_col="close", n_periods=2, gap=1),
         ]
     ).sort_index()
     pd.testing.assert_frame_equal(result, per_ticker)
@@ -115,7 +115,7 @@ def test_future_returns_uses_requested_price_col():
 
 def test_future_returns_rejects_frame_without_price_col():
     """缺少价格列时透传预处理层的报错。"""
-    df = _frame().rename(columns={"close": "adj_close"})
+    df = _frame().rename(columns={"close": "other"})
 
     with pytest.raises(ValueError, match="缺少必要列"):
         future_returns(df=df)
@@ -124,37 +124,37 @@ def test_future_returns_rejects_frame_without_price_col():
 @pytest.mark.parametrize("bad", [0, -1, -5])
 def test_future_returns_rejects_non_positive_n_periods(bad):
     with pytest.raises(ValueError, match="n_periods 必须大于 0"):
-        future_returns(df=_frame(), n_periods=bad)
+        future_returns(df=_frame(), price_col="close", n_periods=bad)
 
 
 @pytest.mark.parametrize("bad", [1.5, "2", True, None])
 def test_future_returns_rejects_non_integer_n_periods(bad):
     with pytest.raises(TypeError, match="n_periods 必须是整数"):
-        future_returns(df=_frame(), n_periods=bad)
+        future_returns(df=_frame(), price_col="close", n_periods=bad)
 
 
 @pytest.mark.parametrize("bad", [-1, -5])
 def test_future_returns_rejects_negative_gap(bad):
     with pytest.raises(ValueError, match="gap 必须大于等于 0"):
-        future_returns(df=_frame(), gap=bad)
+        future_returns(df=_frame(), price_col="close", gap=bad)
 
 
 @pytest.mark.parametrize("bad", [1.0, "1", True, None])
 def test_future_returns_rejects_non_integer_gap(bad):
     with pytest.raises(TypeError, match="gap 必须是整数"):
-        future_returns(df=_frame(), gap=bad)
+        future_returns(df=_frame(), price_col="close", gap=bad)
 
 
 def test_future_returns_defaults_are_five_periods_one_gap():
     """默认参数是 gap=1、n_periods=5, 名字体现出来。"""
-    result = future_returns(df=_frame())
+    result = future_returns(df=_frame(), price_col="close")
 
     assert result.columns[0] == "forward_return_5_gap_1"
 
 
 def test_historical_return_matches_manual_formula():
     """return[t] = price[t] / price[t - n] - 1, 起始记录不足为 NaN。"""
-    result = historical_return(df=_frame(), n_periods=2)
+    result = historical_return(df=_frame(), price_col="close", n_periods=2)
 
     expected = [
         np.nan,
@@ -178,7 +178,7 @@ def test_historical_return_does_not_leak_across_tickers():
     second = _frame(prices=OTHER_PRICES, ticker="B")
     combined = pd.concat([first, second])
 
-    result = historical_return(df=combined, n_periods=2)
+    result = historical_return(df=combined, price_col="close", n_periods=2)
 
     assert result.loc[(DATES[2], "A")].iloc[0] == pytest.approx(
         PRICES[2] / PRICES[0] - 1
@@ -201,18 +201,29 @@ def test_historical_return_unsorted_input_matches_sorted_input():
     shuffled = sorted_df.sample(frac=1.0, random_state=3)
 
     pd.testing.assert_frame_equal(
-        historical_return(df=shuffled, n_periods=2),
-        historical_return(df=sorted_df, n_periods=2),
+        historical_return(df=shuffled, price_col="close", n_periods=2),
+        historical_return(df=sorted_df, price_col="close", n_periods=2),
     )
 
 
 @pytest.mark.parametrize("bad", [0, -2])
 def test_historical_return_rejects_non_positive_n_periods(bad):
     with pytest.raises(ValueError, match="n_periods 必须大于 0"):
-        historical_return(df=_frame(), n_periods=bad)
+        historical_return(df=_frame(), price_col="close", n_periods=bad)
 
 
 @pytest.mark.parametrize("bad", [2.0, "2", True])
 def test_historical_return_rejects_non_integer_n_periods(bad):
     with pytest.raises(TypeError, match="n_periods 必须是整数"):
-        historical_return(df=_frame(), n_periods=bad)
+        historical_return(df=_frame(), price_col="close", n_periods=bad)
+
+
+@pytest.mark.parametrize("function", [future_returns, historical_return])
+def test_returns_default_to_adj_close(function):
+    df = _frame().rename(columns={"close": "adj_close"})
+    df["close"] = 1.0
+    pd.testing.assert_frame_equal(
+        function(df=df, n_periods=2),
+        function(df=df, n_periods=2, price_col="adj_close"),
+    )
+    assert function(df=df, n_periods=2).iloc[:, 0].dropna().ne(0).any()

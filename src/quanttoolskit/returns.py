@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 from quanttoolskit.data.transfer_data import _validated_price
@@ -12,15 +13,15 @@ def future_returns(
     df: pd.DataFrame,
     n_periods: int = 5,
     gap: int = 1,
-    price_col: str = "close",
+    price_col: str = "adj_close",
 ) -> pd.DataFrame:
     """生成未来持有期的简单收益率标签
 
     输入：
-        df: 以 [date, ticker] 为索引的 DataFrame，含 price_col 列
+        df: 以 [date, ticker] 为索引的 DataFrame, 含 price_col 列
         n_periods: 持有的期数, 必须大于 0。
         gap: 从今天往后隔几期，作为计算区间的起点。
-        price_col: 计算使用的价格列, 默认 close。
+        price_col: 计算使用的价格列, 默认 adj_close。
 
     口径：
         label[t] = price[t + gap + n_periods] / price[t + gap] - 1
@@ -29,7 +30,7 @@ def future_returns(
         使用未来数据，只用于事后生成标签
 
     输出：
-        [date, ticker] MultiIndex DataFrame（单列）, 小数收益率
+        [date, ticker] MultiIndex DataFrame (单列)小数收益率
         未来记录不足或对应价格缺失时为 NaN
     """
     if isinstance(n_periods, bool) or not isinstance(n_periods, int):
@@ -60,14 +61,14 @@ def historical_return(
     *,
     df: pd.DataFrame,
     n_periods: int = 5,
-    price_col: str = "close",
+    price_col: str = "adj_close",
 ) -> pd.DataFrame:
     """计算截至基准日期的历史简单收益率
 
     输入：
-        df: 以 [date, ticker] 为索引的 DataFrame，含 price_col 列
+        df: 以 [date, ticker] 为索引的 DataFrame, 含 price_col 列
         n_periods: 回看期数, 必须大于 0
-        price_col: 计算使用的价格列, 默认 close
+        price_col: 计算使用的价格列, 默认 adj_close
 
     口径：
         return[t] = price[t] / price[t - n_periods] - 1
@@ -76,7 +77,7 @@ def historical_return(
         不填补缺失价格。
 
     输出：
-        [date, ticker] MultiIndex DataFrame（单列）, 小数收益率。
+        [date, ticker] MultiIndex DataFrame(单列)小数收益率。
         历史记录不足或端点价格缺失时为 NaN。
     """
     if isinstance(n_periods, bool) or not isinstance(n_periods, int):
@@ -93,3 +94,21 @@ def historical_return(
         .to_frame()
         .sort_index()
     )
+
+
+def log_returns(
+    *,
+    df: pd.DataFrame,
+    price_col: str = "adj_close",
+) -> pd.DataFrame:
+    """计算按 ticker 隔离的单期对数收益率。
+
+    输入为 [date, ticker] MultiIndex DataFrame，默认使用 adj_close。
+    log_return[t] = log(price[t]) - log(price[t - 1])。
+    输出为同索引的单列 DataFrame（log_return），按索引排序。
+    每只股票首行或相邻任一价格缺失时为 NaN，不填补交易记录或价格。
+    """
+    price = _validated_price(df=df, price_col=price_col)
+    log_price = np.log(price)
+    previous = log_price.groupby(level="ticker", sort=False).shift(1)
+    return (log_price - previous).rename("log_return").to_frame().sort_index()

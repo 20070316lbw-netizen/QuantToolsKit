@@ -16,10 +16,10 @@
 | 模块 | 内容 | 状态 |
 | --- | --- | --- |
 | [data](src/quanttoolskit/data/README.md) | 成员准备、SEC 压缩包下载、行情与基本面获取、DuckDB 入库及查询 | 已实现 |
-| [returns](docs/returns.md) | 简单收益率：历史收益特征与未来收益标签 | 已实现 |
+| [returns](docs/returns.md) | 简单与对数收益率：历史特征与未来标签 | 已实现 |
 | [volatility](docs/volatility.md) | 滚动波动率：历史波动特征与未来波动标签 | 已实现 |
 | [indicators](src/quanttoolskit/indicators/README.md) | 技术指标 | 占位 |
-| [factors](src/quanttoolskit/factors/README.md) | 因子计算 | 占位 |
+| [factors](src/quanttoolskit/factors/README.md) | 滚动对数动量、经典 12-1 动量 | 已实现 |
 | [portfolio](src/quanttoolskit/portfolio/README.md) | 权重、调仓与组合操作 | 占位 |
 | [performance](src/quanttoolskit/performance/README.md) | 收益、回撤与绩效统计 | 占位 |
 | [plotting](src/quanttoolskit/plotting/README.md) | 绘图 | 占位 |
@@ -32,7 +32,7 @@ src/quanttoolskit/
 ├── portfolio/     # 权重、调仓、组合操作
 ├── performance/   # 收益、回撤、绩效统计
 ├── plotting/      # 绘图
-├── returns.py     # 简单收益率：历史收益特征与未来收益标签
+├── returns.py     # 简单与对数收益率：历史特征与未来标签
 └── volatility.py  # 滚动波动率：历史波动特征与未来波动标签
 ```
 
