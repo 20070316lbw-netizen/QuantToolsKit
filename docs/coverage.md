@@ -25,6 +25,8 @@ CI 每次生成终端、XML、HTML 报告，并把概要写到 Actions 的 Summa
 参考 [Codecov Action 的 OIDC 说明](https://github.com/codecov/codecov-action#using-oidc)。
 首次上传后才能验证 Codecov 端接收情况和徽章百分比；此前可能显示 unknown。
 如果服务提示仓库尚未激活，需要在 Codecov 登录 GitHub 并启用本仓库。
-上传失败会使 CI 失败，HTML/XML 报告仍已保存，可通过 Actions 查看原因。
+上传失败会在 Actions 中保留告警，不阻断代码检查、测试和构建。
+HTML/XML 报告仍已保存，可通过 Actions 查看。首次上传返回 Repository not found 时，
+需先在 Codecov 启用本仓库，再重新运行 CI。
 
 实现见 [ci.yml](../.github/workflows/ci.yml)。

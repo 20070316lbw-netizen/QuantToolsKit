@@ -49,6 +49,8 @@ jobs:
           if-no-files-found: error
 
       - name: Upload coverage to Codecov
+        # Coverage service availability must not block lint, tests or package build.
+        continue-on-error: true
         uses: codecov/codecov-action@v7
         with:
           use_oidc: true
