@@ -1,48 +1,3 @@
-# 项目数据结构
-
-所有后续量化计算接口的输入和输出必须使用 pandas DataFrame, 索引为恰好两层
-`[date, ticker]`, 顺序固定。date 为日期时间, 键非空且唯一, 按索引升序排列。
-单指标也返回单列 DataFrame；Series 只用于内部中间计算。
-
-数据库、下载源、存储写入和成员/原始申报查询保留来源 schema。读取后, date/ticker 表通过 `to_date_ticker_frame` 转换, 再进入计算。
-`validate_prices` 仅校验已转换行情的价格列, 不负责索引转换。
-基本面先按时点筛选版本、选定期间并将字段透视成列, 禁止直接丢弃重复键。
-缺失值不自动填补, 交易记录不自动补齐, 分组位移和滚动必须按 ticker 隔离。
-详细约定见 docs/data-structure.md；修改契约时同步更新该文档、模块文档和测试。
-主 README 只保留项目概览、目录与安装；模块使用说明放在独立文档并从目录链接。
-
-# 提交信息
-
-所有 commit 信息统一使用 `类型: 中文描述` 格式, 例如 `feat: 新增动量因子`。
-类型可使用 feat、fix、docs、test、refactor、chore 等英文标识；类型标记后的描述统一使用中文。
-
-# 注释、参数说明与调用示范
-
-新增或修改公开计算函数时, 使用中文 docstring, 说明计算口径, 并包含：
-
-- `Args`：输入 DataFrame 的索引、必需列、参数默认值、单位及限制。
-- `Returns`：输出索引、列名、单位、缺失值和样本不足的行为。
-- `Raises`：主要参数与数据校验错误。
-- `Example`：自包含、可执行、具有正确预期结果的调用示例。
-
-函数内注释解释有业务含义的选择, 例如时点对齐、缺失报价、重复分位边界；
-无需逐行复述代码。示例应共用已有计算接口, 不使用未实现的函数或 `type: ignore`
-掩盖输入格式问题。可运行示例及测试分别放在 examples/ 和 tests/, 模块文档链接示例。
-
-下面以分位数组前瞻收益为示范, 源文件为
-[examples/quantile_forward_returns.py](examples/quantile_forward_returns.py)。
-输入为标准 DataFrame；先使用 zscore_by_date 逐日、逐列标准化, 再分桶。
-单因子标准化保留排序；常数或样本不足的截面为 NaN, 多因子不自动合成。
-内部可使用宽表和 Series。输出保留每个调仓日,
-以 QUANTILE_0 等组合名称作为 ticker, 跨日期平均值仅在展示阶段汇总。
-原始示例中的自定义 date_level 固定为契约要求的 date；调仓日取公共行情
-日期序列的第 0、freq、2*freq 条, 不按每只证券各自的记录数移动。
-分组后的平均收益是有效端点证券的等权均值, 须明确披露该缺失值处理口径。
-示例使用未来价格, 仅用于事后检验；组收益单调递增是评价目标, 并非函数保证。
-
-以下代码与可运行源文件保持一致；修改示范时同步更新这里及其测试。
-
-```python
 """分位数组的前瞻收益示范; 运行: python examples/quantile_forward_returns.py。"""
 
 from __future__ import annotations
@@ -164,13 +119,3 @@ if __name__ == "__main__":
     print(result)
     # 跨调仓日的平均值仅用于展示；若新增计算接口, 也须返回标准 DataFrame。
     print(result.groupby(level="ticker")["forward_return"].mean())
-```
-
-# 源码字符规范
-
-编辑器可能提示 U+FF0C 全角逗号与常见源码字符 U+002C ASCII 逗号混淆。
-项目源码、注释、docstring、示范与文档统一使用 ASCII 逗号 `,`;
-正文逗号后加一个空格, 保留中文文字。提及全角逗号时使用 `U+FF0C`
-或转义形式 `\uFF0C`, 避免再次引入触发警告的字符。
-不要通过关闭 Unicode 字符提示来掩盖问题。涉及外部原始数据、解析匹配或
-测试输入时, 如必须表示全角逗号, 使用转义并注明其业务用途。

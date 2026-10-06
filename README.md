@@ -18,10 +18,10 @@
 | [data](src/quanttoolskit/data/README.md) | 成员准备、SEC 压缩包下载、行情与基本面获取、DuckDB 入库及查询 | 已实现 |
 | [returns](docs/returns.md) | 简单与对数收益率：历史特征与未来标签 | 已实现 |
 | [volatility](docs/volatility.md) | 滚动波动率：历史波动特征与未来波动标签 | 已实现 |
-| [indicators](src/quanttoolskit/indicators/README.md) | 技术指标 | 占位 |
+| [indicators](src/quanttoolskit/indicators/README.md) | 因子逐日横截面 Z-score 标准化 | 已实现 |
 | [factors](src/quanttoolskit/factors/README.md) | 滚动对数动量、经典 12-1 动量 | 已实现 |
-| [portfolio](src/quanttoolskit/portfolio/README.md) | 权重、调仓与组合操作 | 占位 |
-| [performance](src/quanttoolskit/performance/README.md) | 收益、回撤与绩效统计 | 占位 |
+| [portfolio](src/quanttoolskit/portfolio/README.md) | 每日横截面分桶、波动率分层分桶 | 已实现 |
+| [performance](src/quanttoolskit/performance/README.md) | 期初等权买入持有基准净值 | 已实现 |
 | [plotting](src/quanttoolskit/plotting/README.md) | 绘图 | 占位 |
 
 ```text
@@ -38,7 +38,7 @@ src/quanttoolskit/
 
 ## 安装
 
-开发时在消费项目（如 `chores`）里安装本地可编辑依赖，修改工具箱后直接生效：
+开发时在消费项目（如 `chores`）里安装本地可编辑依赖, 修改工具箱后直接生效：
 
 ```bash
 uv add --editable ../QuantToolsKit

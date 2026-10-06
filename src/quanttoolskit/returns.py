@@ -20,14 +20,14 @@ def future_returns(
     输入：
         df: 以 [date, ticker] 为索引的 DataFrame, 含 price_col 列
         n_periods: 持有的期数, 必须大于 0。
-        gap: 从今天往后隔几期，作为计算区间的起点。
+        gap: 从今天往后隔几期, 作为计算区间的起点。
         price_col: 计算使用的价格列, 默认 adj_close。
 
     口径：
         label[t] = price[t + gap + n_periods] / price[t + gap] - 1
 
-        默认在下一条交易记录的收盘价入场，持有 5 期后出场
-        使用未来数据，只用于事后生成标签
+        默认在下一条交易记录的收盘价入场, 持有 5 期后出场
+        使用未来数据, 只用于事后生成标签
 
     输出：
         [date, ticker] MultiIndex DataFrame (单列)小数收益率
@@ -73,7 +73,7 @@ def historical_return(
     口径：
         return[t] = price[t] / price[t - n_periods] - 1
 
-        包含当天价格，可用于动量、反转特征或历史表现统计。
+        包含当天价格, 可用于动量、反转特征或历史表现统计。
         不填补缺失价格。
 
     输出：
@@ -103,10 +103,10 @@ def log_returns(
 ) -> pd.DataFrame:
     """计算按 ticker 隔离的单期对数收益率。
 
-    输入为 [date, ticker] MultiIndex DataFrame，默认使用 adj_close。
+    输入为 [date, ticker] MultiIndex DataFrame, 默认使用 adj_close。
     log_return[t] = log(price[t]) - log(price[t - 1])。
-    输出为同索引的单列 DataFrame（log_return），按索引排序。
-    每只股票首行或相邻任一价格缺失时为 NaN，不填补交易记录或价格。
+    输出为同索引的单列 DataFrame（log_return）, 按索引排序。
+    每只股票首行或相邻任一价格缺失时为 NaN, 不填补交易记录或价格。
     """
     price = _validated_price(df=df, price_col=price_col)
     log_price = np.log(price)

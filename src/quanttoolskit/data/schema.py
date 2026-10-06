@@ -1,10 +1,10 @@
 """数据包管理的 DuckDB 表结构及成员列契约。
 
-constituents 是当前证券快照，ticker 是主键；多个股类可以共享 CIK。
-fundamentals 保留每份文件的版本，不能只以 ticker/period_end 去重。
-prices 以 ticker/date 为主键，每个证券每天一行。
+constituents 是当前证券快照, ticker 是主键；多个股类可以共享 CIK。
+fundamentals 保留每份文件的版本, 不能只以 ticker/period_end 去重。
+prices 以 ticker/date 为主键, 每个证券每天一行。
 
-这些常量只声明 SQL，不在导入模块时创建数据库。writer 在写入事务内执行它们。
+这些常量只声明 SQL, 不在导入模块时创建数据库。writer 在写入事务内执行它们。
 """
 
 CONSTITUENTS_COLUMNS = (
@@ -32,7 +32,7 @@ CONSTITUENTS_DDL = """
     )
     """
 
-# filed 是可用时间，accn 是申报版本；同一报告期间的重述与比较期申报分别保存。
+# filed 是可用时间, accn 是申报版本；同一报告期间的重述与比较期申报分别保存。
 # period_months=0 为时点；3/6/9/12 为期间。fundamentals_quarantine 复用相同列结构。
 DDL = """
     CREATE TABLE IF NOT EXISTS fundamentals (
@@ -55,7 +55,7 @@ DDL = """
     """
 
 
-# close 必须有值，其他行情列允许缺失；不在存储层自动补齐或复权。
+# close 必须有值, 其他行情列允许缺失；不在存储层自动补齐或复权。
 PRICES_DDL = """
     CREATE TABLE IF NOT EXISTS prices (
         date DATE NOT NULL,

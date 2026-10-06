@@ -18,9 +18,9 @@ WRITE = False
 
 def main():
     universe = prepare_members()
-    # 要复用成员快照，可保存 universe.to_parquet(
-    #     DATA_DIR / "sp500_members.parquet", index=False)，
-    # 下次使用 load_members(DATA_DIR / "sp500_members.parquet")，无需再联网。
+    # 要复用成员快照, 可保存 universe.to_parquet(
+    #     DATA_DIR / "sp500_members.parquet", index=False),
+    # 下次使用 load_members(DATA_DIR / "sp500_members.parquet"), 无需再联网。
     data = SP500Data(
         universe=universe,
         companyfacts=DATA_DIR / "companyfacts.zip",

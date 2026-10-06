@@ -59,7 +59,7 @@ def test_momentum_matches_manual_price_ratios(window, skip):
 def test_momentum_requires_all_prices_in_window_and_recovers():
     df = _frame([100.0, np.nan, 110.0, 121.0, 133.1, 146.41])
     result = momentum(df=df, window=2, skip=1)
-    # t=3 两个端点有价格，但窗口中间价格缺失，仍不能计算。
+    # t=3 两个端点有价格, 但窗口中间价格缺失, 仍不能计算。
     assert result.iloc[:5, 0].isna().all()
     assert result.iloc[5, 0] == pytest.approx(np.log(133.1 / 110.0))
 

@@ -7,20 +7,20 @@ from ..universe import normalize_sec_ticker
 
 
 def load_prices(*, db: str | Path, tickers=None, start=None, end=None):
-    """从 DuckDB 读取日行情，不发起下载。
+    """从 DuckDB 读取日行情, 不发起下载。
 
     Args:
-        db: 数据库文件路径，以只读方式打开。
-        tickers: 单个 ticker 或序列；统一大写和短横线，None 不限，空序列不匹配。
-        start: 日期下限，含当日；None 不限。
-        end: 日期上限，含当日；None 不限。与 Yahoo 获取接口的排他 end 不同。
+        db: 数据库文件路径, 以只读方式打开。
+        tickers: 单个 ticker 或序列；统一大写和短横线, None 不限, 空序列不匹配。
+        start: 日期下限, 含当日；None 不限。
+        end: 日期上限, 含当日；None 不限。与 Yahoo 获取接口的排他 end 不同。
 
     Returns:
-        保存的行情列，按 ticker/date 升序；匹配不到时返回保留列结构的空表。
+        保存的行情列, 按 ticker/date 升序；匹配不到时返回保留列结构的空表。
 
     Raises:
         FileNotFoundError: 数据库文件不存在。
-        duckdb.Error: 表缺失、结构不兼容或查询失败，不转换成空结果。
+        duckdb.Error: 表缺失、结构不兼容或查询失败, 不转换成空结果。
     """
     clauses, params = [], []
     if tickers is not None:

@@ -14,14 +14,14 @@ def momentum(
     skip: int = 0,
     price_col: str = "adj_close",
 ) -> pd.DataFrame:
-    """累计 window 个单期对数收益率，再按股票后移 skip 期。
+    """累计 window 个单期对数收益率, 再按股票后移 skip 期。
 
-    window 为正整数，skip 为非负整数，均不接受布尔值。
+    window 为正整数, skip 为非负整数, 均不接受布尔值。
     期数按每只股票实际记录计数；不补齐交易日、不填补缺失价格。
     完整窗口的值为 log(price[t-skip] / price[t-skip-window])；
-    窗口内任一价格缺失时为 NaN，即使两个端点都有价格。
+    窗口内任一价格缺失时为 NaN, 即使两个端点都有价格。
     每只股票前 window + skip 条记录为 NaN。
-    输出为排序后的单列 DataFrame，列名 momentum_{window}_skip_{skip}。
+    输出为排序后的单列 DataFrame, 列名 momentum_{window}_skip_{skip}。
     """
     if isinstance(window, bool) or not isinstance(window, int):
         raise TypeError("window 必须是整数")

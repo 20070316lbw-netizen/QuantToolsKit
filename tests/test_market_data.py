@@ -377,7 +377,7 @@ def test_ttm_rejects_nonconsecutive_quarters_even_with_valid_total_span(local_so
     universe, archive, db = local_source
     data = SP500Data(universe=universe, companyfacts=archive, db=db, write=True)
     data.fundamentals()
-    # 首尾仍相隔 275 天，旧逻辑会把中间重复覆盖或缺失的季度凑成 TTM。
+    # 首尾仍相隔 275 天, 旧逻辑会把中间重复覆盖或缺失的季度凑成 TTM。
     with duckdb.connect(str(db)) as con:
         con.execute(
             "DELETE FROM fundamentals WHERE ticker='AAPL' AND field='net_income'"

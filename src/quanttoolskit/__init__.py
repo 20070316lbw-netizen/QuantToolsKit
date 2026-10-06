@@ -1,4 +1,4 @@
-"""个人量化工具箱，通过 Python 包接口使用。"""
+"""个人量化工具箱, 通过 Python 包接口使用。"""
 
 from loguru import logger
 

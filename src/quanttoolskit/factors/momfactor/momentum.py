@@ -15,7 +15,7 @@ def momentum_12_1(
 ) -> pd.DataFrame:
     """计算过去 12 个月中剔除最近 1 个月的累计对数收益。
 
-    每月近似为 m=trading_days_per_month 条记录，不按日历月重采样。
+    每月近似为 m=trading_days_per_month 条记录, 不按日历月重采样。
     窗口为 11*m, 后移 m; 有效完整窗口值为 log(price[t-m]/price[t-12*m])。
     m 必须为正整数且不接受布尔值；缺失值口径见 momentum。
     输出为同索引的单列 DataFrame(mom_12_1)按索引排序。

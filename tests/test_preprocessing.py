@@ -27,7 +27,7 @@ def test_set_datetime_index_sucess():
 
 
 def test_set_datetime_index_missing_column():
-    """测试传入错误的列名时，是否抛出预期的异常"""
+    """测试传入错误的列名时, 是否抛出预期的异常"""
     fake_df = pd.DataFrame({"wrong_col": ["2023-01-01"]})
 
     with pytest.raises(ValueError):

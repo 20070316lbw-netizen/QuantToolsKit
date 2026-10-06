@@ -1,4 +1,4 @@
-"""DuckDB 连接入口，默认只读，连接的关闭由调用方负责。
+"""DuckDB 连接入口, 默认只读, 连接的关闭由调用方负责。
 
 读取接口使用本函数；写入层显式开启事务。导入模块不会连接数据库。
 """
@@ -20,7 +20,7 @@ def get_duckdb(*, path: Path, read_only: bool = True) -> duckdb.DuckDBPyConnecti
         read_only: 是否以只读模式打开 (默认True防止回测时意外修改数据)
 
     Returns:
-        duckdb.DuckDBPyConnection: 数据库连接对象，可用 with 管理生命周期。
+        duckdb.DuckDBPyConnection: 数据库连接对象, 可用 with 管理生命周期。
 
     Raises:
         FileNotFoundError: 只读模式下数据库不存在。

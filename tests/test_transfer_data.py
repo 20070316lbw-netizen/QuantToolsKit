@@ -25,7 +25,7 @@ def prices_long():
 
 
 def test_converted_prices_are_sorted_by_date_then_ticker(prices_long):
-    """按 (date, ticker) 排序，返回保留全部列的数据框。"""
+    """按 (date, ticker) 排序, 返回保留全部列的数据框。"""
     result = validate_prices(df=to_date_ticker_frame(df=prices_long), price_col="close")
 
     assert isinstance(result, pd.DataFrame)
@@ -38,7 +38,7 @@ def test_converted_prices_are_sorted_by_date_then_ticker(prices_long):
 
 
 def test_validate_prices_keeps_all_data_columns(prices_long):
-    """date/ticker 进入索引，其他数据列全部保留。"""
+    """date/ticker 进入索引, 其他数据列全部保留。"""
     result = validate_prices(df=to_date_ticker_frame(df=prices_long), price_col="close")
 
     assert list(result.index.names) == ["date", "ticker"]

@@ -112,7 +112,7 @@ def get_prices(
     else:
         # 单 ticker: 列是单层
         if len(ticker_list) != 1:
-            raise ValueError("多证券行情缺少 ticker 列层级，无法确认证券身份")
+            raise ValueError("多证券行情缺少 ticker 列层级, 无法确认证券身份")
         frames.append(_clean_single(raw.copy(), ticker_list[0], auto_adjust))
 
     if not frames:
@@ -134,7 +134,7 @@ def _clean_single(
         df["date"] = df["date"].dt.tz_localize(None)
     df["ticker"] = ticker
 
-    # 只有数据源明确已复权时，close 才能当作 adj_close；缺少复权价时保留空值。
+    # 只有数据源明确已复权时, close 才能当作 adj_close；缺少复权价时保留空值。
     if "adj_close" not in df.columns and auto_adjust:
         df["adj_close"] = df.get("close")
 

@@ -41,7 +41,7 @@ line-length = 88
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "RUF"]
 ignore = [
-    # 中文注释与文档里的全角标点是刻意的, 不是需要替换的易混淆字符
+    # 中文内容保留其他有用途的标点; U+FF0C 逗号按 AGENTS.md 使用 ASCII
     "RUF001",
     "RUF002",
     "RUF003",

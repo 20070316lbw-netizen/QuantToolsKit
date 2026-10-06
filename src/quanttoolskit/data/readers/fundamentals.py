@@ -76,7 +76,7 @@ _LATEST_FILED_COLUMNS = ["ticker", "last_filed"]
 _VERSION_ORDER = "filed DESC, derived ASC, accn DESC"
 # TTM 的四个单季截止日应跨约 9 个月(52/53 周财年会有几天出入)
 _TTM_SPAN_DAYS = (250, 300)
-# 逐个检查相邻季度，不能只靠四个截止日的总跨度排除中间缺季或重叠期。
+# 逐个检查相邻季度, 不能只靠四个截止日的总跨度排除中间缺季或重叠期。
 _TTM_QUARTER_GAP_DAYS = (70, 125)
 
 
@@ -93,7 +93,7 @@ def load_fundamentals(
     """读取原始版本行(同一期间可能有多行), 不做 as-of 取舍。
 
     Args:
-        tickers: 单个或多个 ticker, 统一大写和短横线; None 不限，空序列不匹配。
+        tickers: 单个或多个 ticker, 统一大写和短横线; None 不限, 空序列不匹配。
         fields: 单个或多个标准字段(如 "revenue"), 默认不限。
         start: period_end 下限(含)。
         end: period_end 上限(含)。
@@ -245,7 +245,7 @@ def load_fundamentals_ttm(
 
     对每个 date, 取当时已公布的最近 4 个单季(period_months=3, 含 sources 推导出的
     单季), 每个单季用 date 之前最新的版本, 求和。4 个单季必须齐全且首尾截止日相差
-    约 9 个月(250~300 天)，每两个相邻截止日相差 70~125 天，否则不返回。
+    约 9 个月(250~300 天), 每两个相邻截止日相差 70~125 天, 否则不返回。
 
     Args:
         dates: 时点序列。
@@ -267,7 +267,7 @@ def load_fundamentals_ttm(
         else ([fields] if isinstance(fields, str) else list(fields))
     )
     if set(selected) - set(additive):
-        raise ValueError("TTM 仅支持可加金额字段，不支持 EPS 或股数")
+        raise ValueError("TTM 仅支持可加金额字段, 不支持 EPS 或股数")
     if not selected:
         return pd.DataFrame(columns=_TTM_COLUMNS)
     conditions, params = _filters(tickers, selected, 3)
