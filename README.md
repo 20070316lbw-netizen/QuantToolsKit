@@ -16,7 +16,8 @@
 | 模块 | 内容 | 状态 |
 | --- | --- | --- |
 | [data](src/quanttoolskit/data/README.md) | 成员准备、SEC 与 Qlib 社区数据、行情与基本面获取、DuckDB 入库及查询 | 已实现 |
-| [returns](docs/returns.md) | 简单与对数收益率：历史特征与未来标签 | 已实现 |
+| [returns](docs/returns.md) | 简单与对数收益率、逐日组合净值 | 已实现 |
+| [rebalance](docs/rebalance.md) | 共同交易日历的调仓日期与区间映射 | 已实现 |
 | [volatility](docs/volatility.md) | 滚动波动率：历史波动特征与未来波动标签 | 已实现 |
 | [indicators](src/quanttoolskit/indicators/README.md) | 因子逐日横截面 Z-score 标准化 | 已实现 |
 | [factors](src/quanttoolskit/factors/README.md) | 窗口累计对数收益、经典 12-1 动量、短期反转 | 已实现 |
@@ -32,13 +33,14 @@ src/quanttoolskit/
 ├── portfolio/     # 权重、调仓、组合操作
 ├── performance/   # 收益、回撤、绩效统计
 ├── plotting/      # 绘图
-├── returns.py     # 简单与对数收益率：历史特征与未来标签
+├── returns.py     # 简单与对数收益率、逐日组合净值
+├── rebalance.py   # 共同交易日历的调仓日期与区间映射
 └── volatility.py  # 滚动波动率：历史波动特征与未来波动标签
 ```
 
 ## 安装
 
-开发时在消费项目（如 `chores`）里安装本地可编辑依赖, 修改工具箱后直接生效：
+开发时在消费项目(如 `chores`)里安装本地可编辑依赖, 修改工具箱后直接生效：
 
 ```bash
 uv add --editable ../QuantToolsKit
@@ -50,11 +52,11 @@ uv add --editable ../QuantToolsKit
 uv add "quanttoolskit @ git+https://github.com/20070316lbw-netizen/QuantToolsKit.git"
 ```
 
-数据下载脚本（`download_sec.sh`、`download_qlib.sh`）随 wheel 装进消费项目的
-`.venv/bin/`, 因此直接依赖安装后仍可执行, 例如 `uv run download_sec.sh`；
+数据下载脚本(`download_sec.sh`、`download_qlib.sh`)随 wheel 装进消费项目的
+`.venv/bin/`, 因此直接依赖安装后仍可执行, 例如 `uv run download_sec.sh`;
 仓库目录继续保留 [scripts/](scripts/) 原件。
 
-安装后从 [data 使用说明](src/quanttoolskit/data/README.md#快速开始) 开始；价格特征
+安装后从 [data 使用说明](src/quanttoolskit/data/README.md#快速开始) 开始;价格特征
 与标签见 [returns](docs/returns.md) 和 [volatility](docs/volatility.md)。
 
 ## 许可证
