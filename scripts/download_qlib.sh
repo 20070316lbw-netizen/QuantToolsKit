@@ -24,7 +24,7 @@ usage() {
   --resume          继续该版本上次保留的未完成目录
   --help            显示说明
 
-依赖：curl 和 Python 3.12+（优先使用工具箱或当前目录的 .venv/bin/python）。
+依赖：curl 和 Python 3.12+（优先使用 QLIB_PYTHON、脚本同级或当前目录的 .venv/bin/python）。
 输出：DIR/发布日期/{qlib_bin.tar.gz,qlib_bin.manifest.json,cn_data/}
 已有同版本目录时停止, 避免覆盖或混合不同数据快照。
 HELP
@@ -51,6 +51,9 @@ if [ -n "${QLIB_PYTHON:-}" ]; then
     python=$QLIB_PYTHON
 elif [ -x "$SCRIPT_DIR/../.venv/bin/python" ]; then
     python=$SCRIPT_DIR/../.venv/bin/python
+elif [ -x "$SCRIPT_DIR/python" ]; then
+    # 脚本随依赖装进消费项目的 venv/bin/, 同目录的 python 就是该环境解释器
+    python=$SCRIPT_DIR/python
 elif [ -x .venv/bin/python ]; then
     python=.venv/bin/python
 else

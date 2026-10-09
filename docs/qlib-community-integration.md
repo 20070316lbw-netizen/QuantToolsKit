@@ -17,9 +17,13 @@ sh scripts/download_qlib.sh --tag 2026-10-07
 sh scripts/download_qlib.sh --tag 2026-10-07 --resume
 ```
 
+脚本随 wheel 装进消费项目的 `.venv/bin/`。在消费项目里把上面的
+`sh scripts/download_qlib.sh` 换成 `uv run download_qlib.sh`, 参数不变。
+
 省略 --tag 时解析 latest, manifest 和压缩包来自同一个具体发布。
 `--dest` 指定保存目录, `--download-only` 仅下载不解压。
-脚本优先使用仓库的 .venv/bin/python；也可通过 QLIB_PYTHON 指定解释器。
+脚本优先使用仓库的 .venv/bin/python, 装进 venv 时使用同目录的解释器；
+也可通过 QLIB_PYTHON 指定解释器。
 
 ```text
 data/

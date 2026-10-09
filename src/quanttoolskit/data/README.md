@@ -41,17 +41,23 @@
 EDGAR_IDENTITY="你的姓名 你的邮箱" sh scripts/download_sec.sh
 ```
 
-默认下载到**执行命令的当前目录**下的 `data/companyfacts.zip`。也可把脚本用于
-消费项目, 例如在 `chores` 目录执行：
+把工具箱安装为依赖后, `scripts/` 会随 wheel 装进**消费项目**的虚拟环境,
+仓库相对路径不再可用。在消费项目目录执行（不使用 uv 时写
+`sh .venv/bin/download_sec.sh`）：
 
 ```bash
-EDGAR_IDENTITY="你的姓名 你的邮箱" sh ../QuantToolsKit/scripts/download_sec.sh
+EDGAR_IDENTITY="你的姓名 你的邮箱" uv run download_sec.sh
 ```
 
-脚本支持重试及 `.part` 断点续传；下载后核验 ZIP 全部条目的 CRC, 通过后才替换
-正式文件。失败时保留旧 ZIP, 再次运行会续传 `.part`；如果 ZIP 校验失败, 按提示
-删除 `.part` 后重新下载。已有完整文件时再次运行会下载新快照。
-自定义保存目录可设置 `SEC_DATA_DIR="/你的数据目录"`；不需要 Python 环境, 也没有包 CLI。
+可编辑依赖 `uv add --editable ../QuantToolsKit` 同样会安装该脚本, 也仍可直接调用
+仓库文件, 例如在 `chores` 目录执行
+`sh ../QuantToolsKit/scripts/download_sec.sh`。
+
+默认下载到**执行命令的当前目录**下的 `data/companyfacts.zip`；自定义保存目录可设置
+`SEC_DATA_DIR="/你的数据目录"`。脚本支持重试及 `.part` 断点续传；下载后核验 ZIP
+全部条目的 CRC, 通过后才替换正式文件。失败时保留旧 ZIP, 再次运行会续传 `.part`；
+ZIP 校验失败时按提示删除 `.part` 后重新下载。已有完整文件时再次运行会下载新快照。
+不需要 Python 环境, 也没有包 CLI。
 
 ## 快速开始
 
@@ -82,6 +88,9 @@ sh scripts/download_qlib.sh --tag 2026-10-07
 .venv/bin/python examples/qlib_community_data.py \
   --data-dir data/qlib-community/2026-10-07/cn_data
 ```
+
+`download_qlib.sh` 同样随依赖装进消费项目的 `.venv/bin/`, 在消费项目里按
+`uv run download_qlib.sh --tag 2026-10-07` 调用, 参数不变。
 
 `read_qlib_prices(data_dir=..., start=..., end=..., tickers=...)` 返回标准
 `[date, ticker]` DataFrame, 保留全部日频字段、复权数值和缺失值。

@@ -28,7 +28,14 @@ build-backend = "uv_build"
 qlib = ["pyqlib==0.9.7"]
 
 [tool.uv.build-backend]
+# source-include 只决定 sdist 内容; 装成依赖时安装的是 wheel, 里面没有 scripts/。
 source-include = ["scripts/**", "examples/**", "tests/**"]
+source-exclude = ["**/.DS_Store"]
+wheel-exclude = ["**/.DS_Store"]
+
+# data 表把 scripts/ 写进 wheel 的 .data/scripts, 安装后落到消费项目 venv 的 bin/。
+[tool.uv.build-backend.data]
+scripts = "scripts"
 
 [dependency-groups]
 dev = [
