@@ -24,6 +24,9 @@ dependencies = [
 requires = ["uv_build>=0.12.22,<0.13.0"]
 build-backend = "uv_build"
 
+[project.optional-dependencies]
+qlib = ["pyqlib==0.9.7"]
+
 [tool.uv.build-backend]
 source-include = ["scripts/**", "examples/**", "tests/**"]
 

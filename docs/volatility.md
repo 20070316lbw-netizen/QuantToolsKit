@@ -4,8 +4,8 @@
 
 实现位于 [volatility.py](../src/quanttoolskit/volatility.py)。
 
-输入与输出均为 `[date, ticker]` MultiIndex DataFrame, 输入包含价格列（默认
-`close`）, 输出为以指标名命名的单列 DataFrame。计算前重新排序, 输入顺序不影响结果。
+输入为含价格列（默认 `close`）的 `[date, ticker]` MultiIndex DataFrame。
+输出为同索引的 Series, `Series.name` 为指标名。计算前重新排序, 输入顺序不影响结果。
 结构与读取边界见 [项目数据结构约定](data-structure.md)。
 
 ## 使用示例
@@ -28,7 +28,7 @@ forward_risk = forward_volatility(df=prices, window=21, gap=1)
 定义日简单收益率 `r[t] = price[t] / price[t - 1] - 1`。
 两个函数均计算样本标准差（`ddof=1`）, 不年化, 输出小数波动率。
 
-| 函数 | 参数默认值 | 窗口 | 输出列名 |
+| 函数 | 参数默认值 | 窗口 | Series.name |
 | --- | --- | --- | --- |
 | `history_vol` | `window=21, price_col="close"` | `r[t - window + 1] ... r[t]` | `volatility_{window}` |
 | `forward_volatility` | `window=21, gap=1, price_col="close"` | `r[t + gap + 1] ... r[t + gap + window]` | `forward_volatility_{window}_gap_{gap}` |
@@ -48,3 +48,10 @@ forward_risk = forward_volatility(df=prices, window=21, gap=1)
 
 验证见 [test_volatility.py](../tests/test_volatility.py) 和
 [test_dataframe_contract.py](../tests/test_dataframe_contract.py)。
+
+## 返回类型迁移
+
+单结果现返回 Series, 使用 `result.name` 查看指标名,
+用 `result.loc[(date, ticker)]` 取标量, 无需再选择指标列。
+附加到行情使用 `prices.join(result)`, 作为后续 DataFrame 输入使用 `result.to_frame()`。
+多指标合并使用 `pd.concat([result_a, result_b], axis=1)`；计算公式和缺失值口径不变。

@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 EXAMPLE = (
     Path(__file__).resolve().parents[1] / "examples" / "quantile_forward_returns.py"
@@ -22,9 +22,10 @@ def test_example_values_and_no_input_mutation():
     result = quantile_forward_returns(scores, prices, freq=20, n_quantiles=2)
     assert result.index.names == ["date", "ticker"]
     assert result.index.is_unique and result.index.is_monotonic_increasing
-    assert result.columns.tolist() == ["forward_return"]
-    assert result.iloc[0, 0] == 0
-    assert result.iloc[1, 0] == pytest.approx(10 / 39)
+    assert isinstance(result, pd.Series)
+    assert result.name == "forward_return"
+    assert result.iloc[0] == 0
+    assert result.iloc[1] == pytest.approx(10 / 39)
     assert_frame_equal(scores, original_scores)
     assert_frame_equal(prices, original_prices)
 
@@ -39,12 +40,12 @@ def test_last_rebalance_has_no_exit_and_all_groups_are_retained():
     result = quantile_forward_returns(
         pd.concat([scores, last]), prices, freq=20, n_quantiles=2
     )
-    assert result.loc[date].isna().all().all()
-    assert result.shape == (4, 1)
+    assert result.loc[date].isna().all()
+    assert result.shape == (4,)
     empty_groups = quantile_forward_returns(
         scores.assign(score=1), prices, freq=20, n_quantiles=2
     )
-    assert empty_groups.isna().all().all()
+    assert empty_groups.isna().all()
 
 
 def test_missing_endpoints_uses_valid_members_without_filling():
@@ -53,10 +54,10 @@ def test_missing_endpoints_uses_valid_members_without_filling():
     prices = prices.drop(index=(dates[20], "D"))
     prices.loc[(dates[20], "C"), "close"] = 1.2
     result = quantile_forward_returns(scores, prices, freq=20, n_quantiles=2)
-    assert result.iloc[1, 0] == pytest.approx(0.2)
+    assert result.iloc[1] == pytest.approx(0.2)
     prices.loc[(dates[20], "C"), "close"] = np.nan
     result = quantile_forward_returns(scores, prices, freq=20, n_quantiles=2)
-    assert pd.isna(result.iloc[1, 0])
+    assert pd.isna(result.iloc[1])
 
 
 @pytest.mark.parametrize(
@@ -80,9 +81,21 @@ def test_off_calendar_score_and_empty_scores():
         )
 
 
-def test_agents_example_matches_executable_source():
+def test_agents_example_executes_and_tracks_return_contract():
     instructions = (EXAMPLE.parents[1] / "AGENTS.md").read_text()
-    assert "```python\n" + EXAMPLE.read_text() + "```" in instructions
+    documented = instructions.split("```python\n", 1)[1].split("```", 1)[0]
+    target = {"__name__": "agents_example"}
+    exec(compile(documented, "AGENTS.md", "exec"), target)
+    scores, prices = target["sample_data"]()
+    result = target["quantile_forward_returns"](
+        target["zscore_by_date"](scores).to_frame(), prices, freq=20, n_quantiles=2
+    )
+    assert result.index.names == ["date", "ticker"]
+    assert result.index.is_unique and result.index.is_monotonic_increasing
+    assert isinstance(result, pd.Series)
+    assert result.name == "forward_return"
+    assert result.round(6).tolist() == [0.0, 0.25641]
+    assert documented == EXAMPLE.read_text()
 
 
 def test_zscore_then_quantile_returns_preserves_single_factor_ranking():
@@ -90,12 +103,18 @@ def test_zscore_then_quantile_returns_preserves_single_factor_ranking():
     scores, prices = sample_data()
     raw = quantile_forward_returns(scores, prices, freq=20, n_quantiles=2)
     standardized = standardize(scores)
-    assert standardized.columns.tolist() == ["score"]
+    assert isinstance(standardized, pd.Series)
+    assert standardized.name == "score"
     assert standardized.index.equals(scores.index)
-    assert_frame_equal(
-        quantile_forward_returns(standardized, prices, freq=20, n_quantiles=2), raw
+    assert_series_equal(
+        quantile_forward_returns(
+            standardized.to_frame(), prices, freq=20, n_quantiles=2
+        ),
+        raw,
     )
     # 常数截面标准化后为 NaN, 无法分桶, 不生成虚构的有效收益。
     constant = standardize(scores.assign(score=1))
-    result = quantile_forward_returns(constant, prices, freq=20, n_quantiles=2)
-    assert result.isna().all().all()
+    result = quantile_forward_returns(
+        constant.to_frame(), prices, freq=20, n_quantiles=2
+    )
+    assert result.isna().all()

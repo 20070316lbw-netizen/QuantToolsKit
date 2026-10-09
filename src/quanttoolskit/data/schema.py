@@ -68,3 +68,11 @@ PRICES_DDL = """
         volume DOUBLE,
     PRIMARY KEY(ticker,date))
     """
+
+# 行情字段由源包决定, writer 从注册数据创建列类型后再施加这些约束。
+QLIB_PRICES_CONSTRAINTS = (
+    "ALTER TABLE qlib_prices ALTER COLUMN date SET NOT NULL",
+    "ALTER TABLE qlib_prices ALTER COLUMN ticker SET NOT NULL",
+    "ALTER TABLE qlib_prices ALTER COLUMN release_tag SET NOT NULL",
+    "ALTER TABLE qlib_prices ADD PRIMARY KEY (date, ticker)",
+)

@@ -1,8 +1,10 @@
 # 项目数据结构
 
-所有后续量化计算接口的输入和输出必须使用 pandas DataFrame, 索引为恰好两层
-`[date, ticker]`, 顺序固定。date 为日期时间, 键非空且唯一, 按索引升序排列。
-单指标也返回单列 DataFrame；Series 只用于内部中间计算。
+`2026-10-09 更新`
+QuantToolsKit 内函数接口满足:
+
+- 数据源流出最后形态强制流经 `to_date_ticker_frame` 函数, 传回 `['date', 'ticker']` MultiIndex DataFrame。
+- 因子计算, 仓位构造, 收益率, 波动率, 策略比如等权买入持仓不变的 `benchmark` 的单结果返回 `pd.Series`; 多结果保留 DataFrame。
 
 数据库、下载源、存储写入和成员/原始申报查询保留来源 schema。读取后, date/ticker 表通过 `to_date_ticker_frame` 转换, 再进入计算。
 `validate_prices` 仅校验已转换行情的价格列, 不负责索引转换。
@@ -21,7 +23,7 @@
 新增或修改公开计算函数时, 使用中文 docstring, 说明计算口径, 并包含：
 
 - `Args`：输入 DataFrame 的索引、必需列、参数默认值、单位及限制。
-- `Returns`：输出索引、列名、单位、缺失值和样本不足的行为。
+- `Returns`：输出类型、索引、Series.name 或 DataFrame 列名、单位、缺失值和样本不足的行为。
 - `Raises`：主要参数与数据校验错误。
 - `Example`：自包含、可执行、具有正确预期结果的调用示例。
 
@@ -29,12 +31,14 @@
 无需逐行复述代码。示例应共用已有计算接口, 不使用未实现的函数或 `type: ignore`
 掩盖输入格式问题。可运行示例及测试分别放在 examples/ 和 tests/, 模块文档链接示例。
 
-下面以分位数组前瞻收益为示范, 源文件为
+下面以分位数组前瞻收益为示范, 对应源文件为
 [examples/quantile_forward_returns.py](examples/quantile_forward_returns.py)。
 输入为标准 DataFrame；先使用 zscore_by_date 逐日、逐列标准化, 再分桶。
-单因子标准化保留排序；常数或样本不足的截面为 NaN, 多因子不自动合成。
+单因子标准化返回 Series 并保留排序, 进入分桶前显式 to_frame；
+常数或样本不足的截面为 NaN, 多因子返回 DataFrame, 不自动合成。
 内部可使用宽表和 Series。输出保留每个调仓日,
-以 QUANTILE_0 等组合名称作为 ticker, 跨日期平均值仅在展示阶段汇总。
+以 QUANTILE_0 等组合名称作为 ticker, 返回名为 forward_return 的 Series,
+跨日期平均值仅在展示阶段汇总。
 原始示例中的自定义 date_level 固定为契约要求的 date；调仓日取公共行情
 日期序列的第 0、freq、2*freq 条, 不按每只证券各自的记录数移动。
 分组后的平均收益是有效端点证券的等权均值, 须明确披露该缺失值处理口径。
@@ -63,7 +67,7 @@ def quantile_forward_returns(
     n_quantiles: int,
     score_col: str = "score",
     price_col: str = "close",
-) -> pd.DataFrame:
+) -> pd.Series:
     """按调仓日分桶, 计算各组到下一个调仓日的平均简单收益。
 
     Args:
@@ -76,7 +80,7 @@ def quantile_forward_returns(
         price_col: 价格列名, 默认 close, 可指定 adj_close。
 
     Returns:
-        [date, ticker] DataFrame, 单列 forward_return, 小数收益率。
+        [date, ticker] MultiIndex Series, name 为 forward_return, 小数收益率。
         date 为打分日期, ticker 为 QUANTILE_0、QUANTILE_1 等组名称。
         每日使用 simple_bucket 分桶, 组内仅对入场、出场价格都有效的
         证券取等权平均；完全无有效收益的组保留 NaN, 不填补报价。
@@ -91,9 +95,9 @@ def quantile_forward_returns(
 
     Example:
         >>> scores, prices = sample_data()
-        >>> scores = zscore_by_date(scores)
+        >>> scores = zscore_by_date(scores).to_frame()
         >>> result = quantile_forward_returns(scores, prices, freq=20, n_quantiles=2)
-        >>> result["forward_return"].round(6).tolist()
+        >>> result.round(6).tolist()
         [0.0, 0.25641]
     """
     _validate_frame(score)
@@ -116,7 +120,7 @@ def quantile_forward_returns(
     forward = (rebalance_prices.shift(-1) / rebalance_prices - 1).stack(
         future_stack=True
     )
-    aligned = buckets.join(forward.rename("forward_return"))
+    aligned = buckets.to_frame().join(forward.rename("forward_return"))
     means = aligned.groupby([pd.Grouper(level="date"), "bucket"])[
         "forward_return"
     ].mean()
@@ -134,7 +138,7 @@ def quantile_forward_returns(
         ],
         names=["date", "ticker"],
     )
-    return pd.DataFrame({"forward_return": means.to_numpy()}, index=index).sort_index()
+    return pd.Series(means.to_numpy(), index=index, name="forward_return").sort_index()
 
 
 def sample_data() -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -157,13 +161,13 @@ if __name__ == "__main__":
     scores, prices = sample_data()
     # 单因子标准化保留排序, 因此本例分桶和组收益不变。
     # 多因子输入会逐列标准化；合成方式须由调用方明确选择。
-    standardized_scores = zscore_by_date(scores)
+    standardized_scores = zscore_by_date(scores).to_frame()
     result = quantile_forward_returns(
         standardized_scores, prices, freq=20, n_quantiles=2
     )
     print(result)
-    # 跨调仓日的平均值仅用于展示；若新增计算接口, 也须返回标准 DataFrame。
-    print(result.groupby(level="ticker")["forward_return"].mean())
+    # 跨调仓日的平均值仅用于展示, 分组计算结果保留 [date, ticker] 索引。
+    print(result.groupby(level="ticker").mean())
 ```
 
 # 源码字符规范

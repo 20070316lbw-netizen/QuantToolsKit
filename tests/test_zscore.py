@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 from quanttoolskit.data.transfer_data import to_date_ticker_frame
 from quanttoolskit.indicators import zscore_by_date
@@ -96,4 +96,17 @@ def test_irregular_dates_do_not_create_records():
     )
     result = zscore_by_date(data)
     assert result.index.equals(data.index)
-    assert result.isna().all().all()
+    assert isinstance(result, pd.Series) and result.name == "f1"
+    assert result.isna().all()
+
+
+@pytest.mark.parametrize("empty", [False, True])
+def test_single_factor_returns_named_series_and_matches_multi_factor(empty):
+    data = factors().iloc[:0] if empty else factors().iloc[::-1]
+    original = data.copy(deep=True)
+    one = zscore_by_date(data[["f1"]])
+    many = zscore_by_date(data)
+    assert isinstance(one, pd.Series) and one.name == "f1"
+    assert isinstance(many, pd.DataFrame)
+    assert_series_equal(one, many["f1"])
+    assert_frame_equal(data, original)

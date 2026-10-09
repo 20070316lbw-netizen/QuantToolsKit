@@ -4,13 +4,15 @@
 
 实现位于 [momfactor](../src/quanttoolskit/factors/momfactor/)。
 
-输入与输出均为 `[date, ticker]` MultiIndex DataFrame, 默认价格列为
-`adj_close`, 输出为以指标名命名的单列 DataFrame。计算前重新排序, 输入顺序
+输入为 `[date, ticker]` MultiIndex DataFrame, 默认价格列为 `adj_close`。
+输出为同索引的 Series, `Series.name` 为指标名。计算前重新排序, 输入顺序
 不影响结果。结构与读取边界见 [项目数据结构约定](data-structure.md)。
 
 ## 使用示例
 
 ```python
+import pandas as pd
+
 from quanttoolskit.data import load_prices, to_date_ticker_frame
 from quanttoolskit.factors import momentum, momentum_12_1
 
@@ -21,14 +23,14 @@ custom = momentum(df=prices, window=63, skip=5)
 
 # 经典 12-1 动量, 每个月近似为 21 条交易记录。
 classic = momentum_12_1(df=prices)
-features = custom.join(classic)
+features = pd.concat([custom, classic], axis=1)
 ```
 
 也可从 `quanttoolskit.factors.momfactor` 导入这两个接口。
 
 ## 参数与计算口径
 
-| 函数 | 参数默认值 | 完整窗口公式 | 输出列名 |
+| 函数 | 参数默认值 | 完整窗口公式 | Series.name |
 | --- | --- | --- | --- |
 | `momentum` | `window` 必填, `skip=0, price_col="adj_close"` | `sum(r[t-skip-window+1 : t-skip+1])` | `momentum_{window}_skip_{skip}` |
 | `momentum_12_1` | `trading_days_per_month=21, price_col="adj_close"` | `log(price[t-m]) - log(price[t-12*m])`, `m` 为每月记录数 | `mom_12_1` |
@@ -52,9 +54,15 @@ features = custom.join(classic)
 - 跳过区间内的价格不参与对应日期的因子计算；因子使用当天或更早的数据。
 - 值为累计对数收益, 转换为简单累计收益可用 `numpy.expm1`, 不是百分数。
 - 价格结构与所选列由 `validate_prices` 校验；长表必须先转换, 重复键、
-  缺失键、非正价格会报错。不会修改输入, 空表保留单列和标准索引。
+  缺失键、非正价格会报错。不会修改输入, 空输入保留 Series.name 和标准索引。
 - 默认使用复权价格；若明确需要原始收盘价, 可传 `price_col="close"`。
-  `mom_12_1` 列名不包含每月记录数, 比较多种月份近似时应先重命名列。
+  `mom_12_1` 名称不包含每月记录数, 比较多种月份近似时应先重命名 Series。
 
 验证见 [test_momentum.py](../tests/test_momentum.py) 和
 [test_dataframe_contract.py](../tests/test_dataframe_contract.py)。
+
+## 返回类型迁移
+
+`momentum`、`momentum_12_1` 直接返回 Series。
+用 `result.loc[(date, ticker)]` 取标量, 将结果附加到行情可用 `prices.join(result)`。
+累计对数收益、窗口长度和 skip 的定义不变。

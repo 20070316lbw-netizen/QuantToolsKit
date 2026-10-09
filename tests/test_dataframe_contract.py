@@ -31,12 +31,12 @@ def test_calculations_require_multiindex(function):
 
 
 @pytest.mark.parametrize("function", FUNCTIONS)
-def test_empty_calculation_retains_dataframe_schema(function):
+def test_empty_calculation_retains_named_series_schema(function):
     raw = pd.DataFrame(columns=["date", "ticker", "close"])
     result = function(df=to_date_ticker_frame(df=raw), price_col="close")
-    assert isinstance(result, pd.DataFrame)
+    assert isinstance(result, pd.Series)
     assert result.empty
-    assert result.shape[1] == 1
+    assert isinstance(result.name, str) and result.name
     assert result.index.names == ["date", "ticker"]
 
 
@@ -52,8 +52,14 @@ def test_features_join_and_input_is_unchanged():
     prices = to_date_ticker_frame(df=raw)
     before = prices.copy(deep=True)
     results = [function(df=prices, price_col="close") for function in FUNCTIONS]
+    for result in results:
+        assert isinstance(result, pd.Series)
+        assert result.index.is_unique and result.index.is_monotonic_increasing
     features = pd.concat(results, axis=1)
     assert features.shape == (16, len(FUNCTIONS))
     assert features.index.equals(prices.index)
     assert features.columns.is_unique
+    pd.testing.assert_frame_equal(
+        prices.join(results[0]).drop(columns=results[0].name), prices
+    )
     pd.testing.assert_frame_equal(prices, before)

@@ -8,14 +8,14 @@
 [![Last commit](https://img.shields.io/github/last-commit/20070316lbw-netizen/QuantToolsKit)](https://github.com/20070316lbw-netizen/QuantToolsKit/commits/main/)
 
 个人量化工具箱。点击模块目录查看各模块的独立使用说明。
-全项目计算接口遵循 [MultiIndex DataFrame 数据结构约定](docs/data-structure.md)。
+数据读取和计算结果遵循 [数据结构约定](docs/data-structure.md)。
 覆盖率统计与徽章配置见 [验证说明](docs/coverage.md)。
 
 ## 模块目录
 
 | 模块 | 内容 | 状态 |
 | --- | --- | --- |
-| [data](src/quanttoolskit/data/README.md) | 成员准备、SEC 压缩包下载、行情与基本面获取、DuckDB 入库及查询 | 已实现 |
+| [data](src/quanttoolskit/data/README.md) | 成员准备、SEC 与 Qlib 社区数据、行情与基本面获取、DuckDB 入库及查询 | 已实现 |
 | [returns](docs/returns.md) | 简单与对数收益率：历史特征与未来标签 | 已实现 |
 | [volatility](docs/volatility.md) | 滚动波动率：历史波动特征与未来波动标签 | 已实现 |
 | [indicators](src/quanttoolskit/indicators/README.md) | 因子逐日横截面 Z-score 标准化 | 已实现 |

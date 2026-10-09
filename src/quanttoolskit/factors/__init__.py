@@ -1,4 +1,4 @@
-"""因子计算, 输入输出均为 [date, ticker] MultiIndex DataFrame。"""
+"""因子计算, 输入为 [date, ticker] DataFrame, 单因子返回同索引 Series。"""
 
 from .momfactor import momentum, momentum_12_1
 

@@ -11,9 +11,12 @@
 - 首次使用：从下方「SEC 压缩包下载」和「快速开始」开始。
 - 已有数据库：[整个 SP500 的 panel + TTM 示例](USAGE.md#整个-sp500同时使用-panel--ttm)。
 - 不确定用哪个函数：[读取接口怎么选](USAGE.md#读取接口怎么选)。
+- Qlib 社区行情：[下载、转换与入库方案](../../../docs/qlib-community-integration.md),
+  保留原始发布文件, 读取复权行情并保存全部日频字段。
 
 - [SEC 压缩包下载](#sec-压缩包下载)
 - [快速开始](#快速开始)
+- [Qlib 社区行情](#qlib-社区行情)
 - [成员快照](#成员快照)
 - [获取与写入](#获取与写入)
 - [数据库查询](#数据库查询)
@@ -68,6 +71,29 @@ facts = data.fundamentals()  # 全 universe、全部标准字段、全部历史�
 prices = data.prices("2016-01-01", "2026-10-01")
 print(data.report)  # 最近一次获取的行数、缺数据情况、是否写入
 ```
+
+## Qlib 社区行情
+
+在仓库目录执行 `uv sync --extra qlib`, 再使用
+[scripts/download_qlib.sh](../../../scripts/download_qlib.sh) 下载社区原始文件：
+
+```bash
+sh scripts/download_qlib.sh --tag 2026-10-07
+.venv/bin/python examples/qlib_community_data.py \
+  --data-dir data/qlib-community/2026-10-07/cn_data
+```
+
+`read_qlib_prices(data_dir=..., start=..., end=..., tickers=...)` 返回标准
+`[date, ticker]` DataFrame, 保留全部日频字段、复权数值和缺失值。
+也可用 `market="csi300"` 替代 tickers, 成分有效区间由 Qlib 处理。
+
+`save_qlib_prices(db=..., prices=..., release_tag=...)` 在事务内整表替换
+`qlib_prices`, 主键为 `(date, ticker)`, release_tag 为普通来源列。
+查询直接手写 SQL, 进入计算前排除 release_tag 并调用 `to_date_ticker_frame`。
+
+示例默认使用临时库, 传入 `--db` 才保留数据库。
+完整参数、SQL 示例与保存语义见 [Qlib 使用说明](../../../docs/qlib-community-integration.md)
+和 [可运行示例](../../../examples/qlib_community_data.py)。
 
 ## 成员快照
 
@@ -173,6 +199,7 @@ src/quanttoolskit/data/
 ├── sources/
 │   ├── wikipedia.py
 │   ├── yahoo.py
+│   ├── qlib.py               # 本地社区日行情与标准索引转换
 │   └── sec/
 │       ├── bulk.py
 │       ├── fields.py
@@ -207,7 +234,7 @@ src/quanttoolskit/data/
 
 ## 读取后统一数据结构
 
-量化计算统一使用 `[date, ticker]` MultiIndex DataFrame, 规则见
+量化计算输入使用 `[date, ticker]` MultiIndex DataFrame, 单结果返回 Series, 规则见
 [项目约定](../../../docs/data-structure.md)。行情读取示例：
 
 ```python

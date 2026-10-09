@@ -46,10 +46,10 @@ def test_history_vol_matches_manual_rolling_sample_std():
         for i in range(len(PRICES))
     ]
 
-    assert result.columns[0] == "volatility_3"
+    assert result.name == "volatility_3"
     assert result.index.names == ["date", "ticker"]
     np.testing.assert_allclose(
-        result.iloc[:, 0].to_numpy(), expected, rtol=1e-12, atol=0.0, equal_nan=True
+        result.to_numpy(), expected, rtol=1e-12, atol=0.0, equal_nan=True
     )
 
 
@@ -57,8 +57,8 @@ def test_history_vol_needs_window_plus_one_records():
     """需要 window + 1 条价格才能首次给出非 NaN。"""
     result = history_vol(df=_frame(), window=3)
 
-    assert result.iloc[:3].isna().all().all()
-    assert result.iloc[3:].notna().all().all()
+    assert result.iloc[:3].isna().all()
+    assert result.iloc[3:].notna().all()
 
 
 def test_history_vol_constant_return_is_zero():
@@ -76,8 +76,8 @@ def test_history_vol_propagates_missing_price():
 
     result = history_vol(df=_frame(prices=prices), window=2)
 
-    assert result.iloc[:5].isna().all().all()
-    assert result.iloc[5, 0] == pytest.approx(
+    assert result.iloc[:5].isna().all()
+    assert result.iloc[5] == pytest.approx(
         np.std([95.0 / 108.0 - 1, 112.0 / 95.0 - 1], ddof=1)
     )
 
@@ -93,19 +93,17 @@ def test_history_vol_does_not_leak_across_tickers():
     assert result.index.is_unique
     assert len(result) == len(PRICES) * 2
     returns_b = _daily_returns(OTHER_PRICES)
-    assert result.loc[(DATES[3], "A")].iloc[0] == pytest.approx(
+    assert result.loc[(DATES[3], "A")] == pytest.approx(
         np.std(_daily_returns(PRICES)[1:4], ddof=1)
     )
-    assert result.loc[(DATES[3], "B")].iloc[0] == pytest.approx(
-        np.std(returns_b[1:4], ddof=1)
-    )
+    assert result.loc[(DATES[3], "B")] == pytest.approx(np.std(returns_b[1:4], ddof=1))
     per_ticker = pd.concat(
         [
             history_vol(df=first, window=3),
             history_vol(df=second, window=3),
         ]
     ).sort_index()
-    pd.testing.assert_frame_equal(result, per_ticker)
+    pd.testing.assert_series_equal(result, per_ticker)
 
 
 def test_history_vol_uses_requested_price_col():
@@ -113,10 +111,8 @@ def test_history_vol_uses_requested_price_col():
 
     result = history_vol(df=df, window=3, price_col="adj_close")
 
-    assert result.columns[0] == "volatility_3"
-    assert result.iloc[3, 0] == pytest.approx(
-        np.std(_daily_returns(PRICES)[1:4], ddof=1)
-    )
+    assert result.name == "volatility_3"
+    assert result.iloc[3] == pytest.approx(np.std(_daily_returns(PRICES)[1:4], ddof=1))
 
 
 @pytest.mark.parametrize("bad", [0, 1, -3])
@@ -146,10 +142,10 @@ def test_forward_volatility_matches_manual_formula():
             np.std(returns[start:stop], ddof=1) if stop <= len(PRICES) else np.nan
         )
 
-    assert result.columns[0] == "forward_volatility_3_gap_1"
+    assert result.name == "forward_volatility_3_gap_1"
     assert result.index.names == ["date", "ticker"]
     np.testing.assert_allclose(
-        result.iloc[:, 0].to_numpy(), expected, rtol=1e-12, atol=0.0, equal_nan=True
+        result.to_numpy(), expected, rtol=1e-12, atol=0.0, equal_nan=True
     )
 
 
@@ -160,10 +156,10 @@ def test_forward_volatility_gap_zero():
     result = forward_volatility(df=_frame(), window=window, gap=gap)
 
     returns = _daily_returns(PRICES)
-    assert result.iloc[0, 0] == pytest.approx(np.std(returns[1:3], ddof=1))
-    assert result.iloc[3, 0] == pytest.approx(np.std(returns[4:6], ddof=1))
-    assert np.isnan(result.iloc[4, 0])
-    assert np.isnan(result.iloc[5, 0])
+    assert result.iloc[0] == pytest.approx(np.std(returns[1:3], ddof=1))
+    assert result.iloc[3] == pytest.approx(np.std(returns[4:6], ddof=1))
+    assert np.isnan(result.iloc[4])
+    assert np.isnan(result.iloc[5])
 
 
 def test_forward_volatility_does_not_leak_across_tickers():
@@ -178,19 +174,15 @@ def test_forward_volatility_does_not_leak_across_tickers():
     assert len(result) == len(PRICES) * 2
     returns_a = _daily_returns(PRICES)
     returns_b = _daily_returns(OTHER_PRICES)
-    assert result.loc[(DATES[0], "A")].iloc[0] == pytest.approx(
-        np.std(returns_a[2:5], ddof=1)
-    )
-    assert result.loc[(DATES[0], "B")].iloc[0] == pytest.approx(
-        np.std(returns_b[2:5], ddof=1)
-    )
+    assert result.loc[(DATES[0], "A")] == pytest.approx(np.std(returns_a[2:5], ddof=1))
+    assert result.loc[(DATES[0], "B")] == pytest.approx(np.std(returns_b[2:5], ddof=1))
     per_ticker = pd.concat(
         [
             forward_volatility(df=first, window=3, gap=1),
             forward_volatility(df=second, window=3, gap=1),
         ]
     ).sort_index()
-    pd.testing.assert_frame_equal(result, per_ticker)
+    pd.testing.assert_series_equal(result, per_ticker)
 
 
 def test_forward_volatility_uses_requested_price_col():
@@ -198,9 +190,7 @@ def test_forward_volatility_uses_requested_price_col():
 
     result = forward_volatility(df=df, window=3, gap=1, price_col="adj_close")
 
-    assert result.iloc[0, 0] == pytest.approx(
-        np.std(_daily_returns(PRICES)[2:5], ddof=1)
-    )
+    assert result.iloc[0] == pytest.approx(np.std(_daily_returns(PRICES)[2:5], ddof=1))
 
 
 def test_forward_volatility_propagates_missing_price():
@@ -210,8 +200,8 @@ def test_forward_volatility_propagates_missing_price():
     result = forward_volatility(df=_frame(prices=prices), window=2, gap=0)
 
     # 缺失价格污染了 r[2]、r[3], 只有完全落在有效区间上的 t=3 有值
-    assert result.iloc[:3].isna().all().all()
-    assert result.iloc[3, 0] == pytest.approx(
+    assert result.iloc[:3].isna().all()
+    assert result.iloc[3] == pytest.approx(
         np.std([95.0 / 108.0 - 1, 112.0 / 95.0 - 1], ddof=1)
     )
 

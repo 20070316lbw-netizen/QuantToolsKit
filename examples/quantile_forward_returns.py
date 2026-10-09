@@ -18,7 +18,7 @@ def quantile_forward_returns(
     n_quantiles: int,
     score_col: str = "score",
     price_col: str = "close",
-) -> pd.DataFrame:
+) -> pd.Series:
     """按调仓日分桶, 计算各组到下一个调仓日的平均简单收益。
 
     Args:
@@ -31,7 +31,7 @@ def quantile_forward_returns(
         price_col: 价格列名, 默认 close, 可指定 adj_close。
 
     Returns:
-        [date, ticker] DataFrame, 单列 forward_return, 小数收益率。
+        [date, ticker] MultiIndex Series, name 为 forward_return, 小数收益率。
         date 为打分日期, ticker 为 QUANTILE_0、QUANTILE_1 等组名称。
         每日使用 simple_bucket 分桶, 组内仅对入场、出场价格都有效的
         证券取等权平均；完全无有效收益的组保留 NaN, 不填补报价。
@@ -46,9 +46,9 @@ def quantile_forward_returns(
 
     Example:
         >>> scores, prices = sample_data()
-        >>> scores = zscore_by_date(scores)
+        >>> scores = zscore_by_date(scores).to_frame()
         >>> result = quantile_forward_returns(scores, prices, freq=20, n_quantiles=2)
-        >>> result["forward_return"].round(6).tolist()
+        >>> result.round(6).tolist()
         [0.0, 0.25641]
     """
     _validate_frame(score)
@@ -71,7 +71,7 @@ def quantile_forward_returns(
     forward = (rebalance_prices.shift(-1) / rebalance_prices - 1).stack(
         future_stack=True
     )
-    aligned = buckets.join(forward.rename("forward_return"))
+    aligned = buckets.to_frame().join(forward.rename("forward_return"))
     means = aligned.groupby([pd.Grouper(level="date"), "bucket"])[
         "forward_return"
     ].mean()
@@ -89,7 +89,7 @@ def quantile_forward_returns(
         ],
         names=["date", "ticker"],
     )
-    return pd.DataFrame({"forward_return": means.to_numpy()}, index=index).sort_index()
+    return pd.Series(means.to_numpy(), index=index, name="forward_return").sort_index()
 
 
 def sample_data() -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -112,10 +112,10 @@ if __name__ == "__main__":
     scores, prices = sample_data()
     # 单因子标准化保留排序, 因此本例分桶和组收益不变。
     # 多因子输入会逐列标准化；合成方式须由调用方明确选择。
-    standardized_scores = zscore_by_date(scores)
+    standardized_scores = zscore_by_date(scores).to_frame()
     result = quantile_forward_returns(
         standardized_scores, prices, freq=20, n_quantiles=2
     )
     print(result)
-    # 跨调仓日的平均值仅用于展示；若新增计算接口, 也须返回标准 DataFrame。
-    print(result.groupby(level="ticker")["forward_return"].mean())
+    # 跨调仓日的平均值仅用于展示, 分组计算结果保留 [date, ticker] 索引。
+    print(result.groupby(level="ticker").mean())

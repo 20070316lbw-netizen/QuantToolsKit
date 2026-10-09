@@ -1,4 +1,4 @@
-"""按日期进行横截面分桶, 输出标准 DataFrame。"""
+"""按日期进行横截面分桶, 单桶号返回 Series, 分层与桶号返回 DataFrame。"""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ def _column(df: pd.DataFrame, name: str) -> pd.Series:
 
 def simple_bucket(
     df: pd.DataFrame, *, score_col: str = "score", n_quantiles: int = N_QUANTILES
-) -> pd.DataFrame:
+) -> pd.Series:
     """每日按分数进行横截面分位分桶。
 
     Args:
@@ -47,9 +47,10 @@ def simple_bucket(
         n_quantiles: 每日分桶数量, 默认 5, 必须为正整数, 不接受布尔值。
 
     Returns:
-        同输入键、按索引排序的单列 DataFrame, 列名 bucket。
+        同输入键、按索引排序的 [date, ticker] Series, name 为 bucket。
         桶号从 0 开始, 分数越高桶号越高。每日有效样本不足时为 NaN；
         重复分位边界减少实际桶数, 全部分数相同时为 NaN, 不填补缺失值。
+        桶号是分组标签, 不表示仓位权重；空输入返回空 Series。
 
     Raises:
         TypeError: df 不是 DataFrame, 或 n_quantiles 不是整数。
@@ -62,18 +63,18 @@ def simple_bucket(
         ...     names=["date", "ticker"],
         ... )
         >>> signals = pd.DataFrame({"score": [1., 2., 3., 4.]}, index=index)
-        >>> simple_bucket(signals, n_quantiles=2)["bucket"].tolist()
+        >>> simple_bucket(signals, n_quantiles=2).tolist()
         [0, 0, 1, 1]
     """
     _validate_frame(df)
     _group_count(n_quantiles, "n_quantiles")
     score = _column(df, score_col).sort_index()
     if score.empty:
-        return score.rename("bucket").to_frame()
+        return score.rename("bucket")
     result = score.groupby(level="date", sort=False).transform(
         lambda values: _bucket(values, n_quantiles)
     )
-    return result.rename("bucket").to_frame()
+    return result.rename("bucket")
 
 
 def vol_bucket(

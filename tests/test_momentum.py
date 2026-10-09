@@ -23,20 +23,12 @@ def test_log_returns_formula_default_price_and_input_preserved():
     df["close"] = 1.0
     before = df.copy(deep=True)
     result = log_returns(df=df)
-    expected = pd.DataFrame(
-        {
-            "log_return": [
-                np.nan,
-                np.log(1.1),
-                np.log(0.9),
-                np.nan,
-                np.nan,
-                np.log(1.25),
-            ]
-        },
+    expected = pd.Series(
+        [np.nan, np.log(1.1), np.log(0.9), np.nan, np.nan, np.log(1.25)],
         index=df.index,
+        name="log_return",
     )
-    pd.testing.assert_frame_equal(result, expected)
+    pd.testing.assert_series_equal(result, expected)
     pd.testing.assert_frame_equal(df, before)
 
 
@@ -51,17 +43,17 @@ def test_momentum_matches_manual_price_ratios(window, skip):
         else np.log(values[t - skip] / values[t - skip - window])
         for t in range(len(values))
     ]
-    assert result.columns.tolist() == [f"momentum_{window}_skip_{skip}"]
+    assert result.name == f"momentum_{window}_skip_{skip}"
     pd.testing.assert_index_equal(result.index, df.index)
-    np.testing.assert_allclose(result.iloc[:, 0], expected, atol=1e-14, equal_nan=True)
+    np.testing.assert_allclose(result, expected, atol=1e-14, equal_nan=True)
 
 
 def test_momentum_requires_all_prices_in_window_and_recovers():
     df = _frame([100.0, np.nan, 110.0, 121.0, 133.1, 146.41])
     result = momentum(df=df, window=2, skip=1)
     # t=3 两个端点有价格, 但窗口中间价格缺失, 仍不能计算。
-    assert result.iloc[:5, 0].isna().all()
-    assert result.iloc[5, 0] == pytest.approx(np.log(133.1 / 110.0))
+    assert result.iloc[:5].isna().all()
+    assert result.iloc[5] == pytest.approx(np.log(133.1 / 110.0))
 
 
 @pytest.mark.parametrize(
@@ -79,9 +71,9 @@ def test_group_isolation_sorting_gaps_and_input_preserved(function):
     expected = pd.concat(
         [function(df=a, **kwargs), function(df=b, **kwargs)]
     ).sort_index()
-    pd.testing.assert_frame_equal(result, expected)
-    assert result.xs("A", level="ticker").notna().any().iloc[0]
-    assert result.xs("B", level="ticker").notna().any().iloc[0]
+    pd.testing.assert_series_equal(result, expected)
+    assert result.xs("A", level="ticker").notna().any()
+    assert result.xs("B", level="ticker").notna().any()
     pd.testing.assert_index_equal(result.index, df.sort_index().index)
     pd.testing.assert_frame_equal(df, before)
 
@@ -91,19 +83,19 @@ def test_12_1_uses_eleven_month_window_and_skips_one_month(m):
     values = np.exp(np.arange(12 * m + 2) / 100)
     df = _frame(values)
     result = momentum_12_1(df=df, trading_days_per_month=m)
-    assert result.columns.tolist() == ["mom_12_1"]
-    assert result.iloc[: 12 * m, 0].isna().all()
-    assert result.iloc[12 * m, 0] == pytest.approx(11 * m / 100)
+    assert result.name == "mom_12_1"
+    assert result.iloc[: 12 * m].isna().all()
+    assert result.iloc[12 * m] == pytest.approx(11 * m / 100)
     changed = df.copy()
     changed.iloc[-m:, 0] *= 10
-    pd.testing.assert_frame_equal(
+    pd.testing.assert_series_equal(
         result, momentum_12_1(df=changed, trading_days_per_month=m)
     )
 
 
 def test_default_12_1_matches_explicit_twenty_one_days():
     df = _frame(np.exp(np.arange(255) / 100))
-    pd.testing.assert_frame_equal(
+    pd.testing.assert_series_equal(
         momentum_12_1(df=df), momentum_12_1(df=df, trading_days_per_month=21)
     )
 
@@ -143,11 +135,11 @@ def test_rejects_out_of_range_parameters(parameter, bad):
 def test_empty_frame_and_custom_price_column(function):
     df = _frame([]).rename(columns={"adj_close": "price"})
     result = function(df=df, price_col="price")
-    assert isinstance(result, pd.DataFrame)
-    assert result.shape == (0, 1)
+    assert isinstance(result, pd.Series)
+    assert result.shape == (0,)
     pd.testing.assert_index_equal(result.index, df.index)
     df = _frame([1.0, 2.0, 4.0]).rename(columns={"adj_close": "price"})
-    assert function(df=df, price_col="price").shape == (3, 1)
+    assert function(df=df, price_col="price").shape == (3,)
     with pytest.raises(ValueError, match="缺少必要列"):
         function(df=df)
 
@@ -178,7 +170,7 @@ def test_rejects_invalid_keys_and_unconverted_input(function):
 
 def test_log_returns_avoids_overflow_in_price_ratio():
     result = log_returns(df=_frame([1e-300, 1e300]))
-    assert result.iloc[1, 0] == pytest.approx(600 * np.log(10))
+    assert result.iloc[1] == pytest.approx(600 * np.log(10))
 
 
 def test_momentum_package_exports_are_functions():

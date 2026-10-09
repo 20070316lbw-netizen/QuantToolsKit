@@ -12,24 +12,33 @@ def history_vol(
     df: pd.DataFrame,
     window: int = 21,
     price_col: str = "close",
-) -> pd.DataFrame:
+) -> pd.Series:
     """计算历史日简单收益率的滚动波动率。
 
-    输入：
-        df: 以 [date, ticker] 为索引的 DataFrame, 含 price_col 列。
-        window: 窗口内的日收益率数量, 必须大于等于 2。
-        price_col: 计算使用的价格列, 默认 close。
+    Args:
+        df: [date, ticker] MultiIndex DataFrame, 含 price_col 列, 键非空且唯一。
+        window: 窗口内收益率数量, 默认 21, 至少为 2 的整数, 不接受布尔值。
+            期数按每只股票自己的交易记录计数。
+        price_col: 价格列名, 默认 close, 非缺失价格须为正数。
 
-    口径：
-        return[t] = price[t] / price[t - 1] - 1
-        volatility[t] = 最近 window 个收益率的样本标准差 (ddof=1)
+    Returns:
+        排序后的 [date, ticker] Series, name 为 volatility_{window}, 小数波动率。
+        最近 window 个日简单收益率的样本标准差, ddof=1, 包含当天收益率。
+        不年化、不填补价格；需 window+1 条有效价格记录才能首次计算。
+        窗口不足或窗口内收益率缺失时为 NaN, 空输入返回空 Series。
 
-        窗口包含当天收益率, 不年化, 不填补缺失价格。
-        需要 window + 1 条连续且价格有效的记录才能首次计算。
+    Raises:
+        TypeError: df 非 DataFrame, 或 window 非整数。
+        ValueError: 索引、价格不符合约定, 或 window 小于 2。
 
-    输出：
-        [date, ticker] MultiIndex DataFrame（单列）, 小数波动率。
-        窗口不足或窗口内收益率缺失时为 NaN。
+    Example:
+        >>> index = pd.MultiIndex.from_product(
+        ...     [pd.date_range("2024-01-01", periods=3), ["A"]],
+        ...     names=["date", "ticker"],
+        ... )
+        >>> prices = pd.DataFrame({"close": [1., 2., 4.]}, index=index)
+        >>> history_vol(df=prices, window=2).iloc[-1]
+        np.float64(0.0)
     """
     if isinstance(window, bool) or not isinstance(window, int):
         raise TypeError("window 必须是整数")
@@ -51,7 +60,7 @@ def history_vol(
         .reindex(price.index)
     )
 
-    return volatility.rename(f"volatility_{window}").to_frame().sort_index()
+    return volatility.rename(f"volatility_{window}").sort_index()
 
 
 def forward_volatility(
@@ -60,33 +69,35 @@ def forward_volatility(
     window: int = 21,
     gap: int = 1,
     price_col: str = "close",
-) -> pd.DataFrame:
-    """计算未来持有区间内的波动率标签
+) -> pd.Series:
+    """计算未来持有区间内的波动率标签。
 
     Args:
-        df: 以 [date, ticker] 为索引的 DataFrame
-        window: 持有区间的期数, 也是单期收益率的数量, 至少为 2
-        gap: 基准日期到区间起点的期数, 至少为 0
-        price_col: 使用的价格列, 默认 close
-
-    口径：
-        r[t] = price[t] / price[t - 1] - 1
-        volatility[t] = std(
-            r[t + gap + 1], ..., r[t + gap + window],
-            ddof=1,
-        )
-
-        使用从 price[t + gap] 到 price[t + gap + window]
-        的 window + 1 个价格, 计算 window 个收益率的样本标准差。
-        不年化, 不填补缺失价格。
+        df: [date, ticker] MultiIndex DataFrame, 含 price_col 列, 键非空且唯一。
+        window: 持有区间的单期收益率数量, 默认 21, 至少为 2 的整数。
+        gap: 基准日到区间起点的记录数, 默认 1, 非负整数。
+            期数按每只股票自己的交易记录计数, 均不接受布尔值。
+        price_col: 价格列名, 默认 close, 非缺失价格须为正数。
 
     Returns:
-        [date, ticker] MultiIndex DataFrame（单列）, 小数波动率。
-        未来记录不足或窗口内收益率缺失时为 NaN。
+        排序后的 [date, ticker] Series, name 为 forward_volatility_{window}_gap_{gap}。
+        使用 price[t+gap] 至 price[t+gap+window] 的 window+1 个价格,
+        计算 window 个日简单收益率的样本标准差, ddof=1, 小数波动率。
+        不年化、不填补价格；未来记录不足或窗口收益率缺失时为 NaN。
+        空输入返回空 Series。使用未来数据, 仅用于事后生成标签。
 
-    注意：
-        期数按每只股票的交易记录计数。
-        使用未来数据, 只用于事后生成标签或评估预测。
+    Raises:
+        TypeError: df 非 DataFrame, 或 window/gap 非整数。
+        ValueError: 索引、价格不符合约定, window 小于 2 或 gap 为负数。
+
+    Example:
+        >>> index = pd.MultiIndex.from_product(
+        ...     [pd.date_range("2024-01-01", periods=3), ["A"]],
+        ...     names=["date", "ticker"],
+        ... )
+        >>> prices = pd.DataFrame({"close": [1., 2., 4.]}, index=index)
+        >>> forward_volatility(df=prices, window=2, gap=0).iloc[0]
+        np.float64(0.0)
     """
     if isinstance(window, bool) or not isinstance(window, int):
         raise TypeError("window 必须是整数")
@@ -119,8 +130,4 @@ def forward_volatility(
         -(gap + window)
     )
 
-    return (
-        forward_vol.rename(f"forward_volatility_{window}_gap_{gap}")
-        .to_frame()
-        .sort_index()
-    )
+    return forward_vol.rename(f"forward_volatility_{window}_gap_{gap}").sort_index()

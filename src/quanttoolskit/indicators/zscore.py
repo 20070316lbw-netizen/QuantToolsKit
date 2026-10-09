@@ -8,7 +8,9 @@ import pandas as pd
 from quanttoolskit.data.transfer_data import _validate_frame
 
 
-def zscore_by_date(df: pd.DataFrame, *, date_level: str = "date") -> pd.DataFrame:
+def zscore_by_date(
+    df: pd.DataFrame, *, date_level: str = "date"
+) -> pd.Series | pd.DataFrame:
     """逐日、逐列计算 z = (值 - 当日均值) / 当日样本标准差。
 
     Args:
@@ -17,8 +19,10 @@ def zscore_by_date(df: pd.DataFrame, *, date_level: str = "date") -> pd.DataFram
         date_level: 日期层名, 默认 date; 为遵循项目契约, 只接受 date。
 
     Returns:
-        与输入键、列相同且按索引排序的 DataFrame, 数值无量纲。
-        每列在每个日期内独立计算, 标准差采用 ddof=1（样本标准差）。
+        索引为与输入键相同且排序的 [date, ticker], 数值无量纲。
+        单列输入返回 Series, name 为原列名；多列输入返回同列名 DataFrame。
+        空输入按列数遵循相同规则；零列输入返回零列 DataFrame。
+        每列在每个日期内独立计算, 标准差采用 ddof=1(样本标准差)
         均值、标准差仅使用非缺失值；原缺失值保留为 NaN。
         标准差为 0、有效样本少于 2 或全缺失时, 当日该因子全为 NaN。
         不补记录、不截尾, 也不对不同因子求平均或合成分数。
@@ -34,7 +38,7 @@ def zscore_by_date(df: pd.DataFrame, *, date_level: str = "date") -> pd.DataFram
         ...     names=["date", "ticker"],
         ... )
         >>> factors = pd.DataFrame({"f1": [1., 2., 3.]}, index=index)
-        >>> zscore_by_date(factors)["f1"].tolist()
+        >>> zscore_by_date(factors).tolist()
         [-1.0, 0.0, 1.0]
     """
     _validate_frame(df)
@@ -44,9 +48,10 @@ def zscore_by_date(df: pd.DataFrame, *, date_level: str = "date") -> pd.DataFram
     if np.isinf(data.to_numpy()).any():
         raise ValueError("因子必须是有限数值或缺失值")
     if data.empty:
-        return data
+        return data.iloc[:, 0] if len(data.columns) == 1 else data
     grouped = data.groupby(level="date", sort=False)
     mean = grouped.transform("mean")
     std = grouped.transform("std")
     # 常数截面没有可定义的标准分数；掩蔽零分母, 不人为赋值为 0。
-    return (data - mean) / std.where(std.ne(0))
+    result = (data - mean) / std.where(std.ne(0))
+    return result.iloc[:, 0] if len(result.columns) == 1 else result

@@ -7,14 +7,11 @@ from quanttoolskit.data.transfer_data import to_date_ticker_frame
 from quanttoolskit.performance import buy_and_hold_nav
 
 prices = to_date_ticker_frame(df=raw)  # raw 含 date、ticker、adj_close
-nav = buy_and_hold_nav(
-    prices, initial_capital=1.0, price_col="adj_close", portfolio_ticker="BENCH"
-)
+nav = buy_and_hold_nav(prices, initial_capital=1.0, price_col="adj_close")
 ```
 
-`buy_and_hold_nav(price, initial_capital=1.0, *, price_col="close",
-portfolio_ticker="BUY_AND_HOLD")` 接受标准行情 DataFrame, 返回单列 `nav`,
-索引为 `[date, ticker]`, ticker 是代表整个组合的名称。
+`buy_and_hold_nav(price, initial_capital=1.0, *, price_col="close")` 接受标准行情
+DataFrame, 返回名为 `nav` 的 Series, 索引为按日期排序的 DatetimeIndex（名为 date）。
 
 首个观察日期有有效价格的证券形成固定成员池, 期初资金等分后买入固定份额：
 `nav[t] = initial_capital × mean(price[t, i] / price[first_date, i])`。
@@ -24,11 +21,12 @@ portfolio_ticker="BUY_AND_HOLD")` 接受标准行情 DataFrame, 返回单列 `na
 某日期任何固定成员缺少记录或价格, 整组净值为 NaN, 不填零或前向填充；
 后续报价完整时可恢复计算。只输出输入中出现的日期, 不补交易日。
 首日全部价格缺失时报错。价格必须为有限正数或缺失值, 期初资金必须为有限
-正数, 组合名称必须为非空字符串。空输入返回有双层索引和 `nav` 列的空表。
+正数。空输入返回具有 date 索引和 nav 名称的空 Series。
 
-原实现接受价格宽表、返回 Series, 且实际每日等权再平衡。现在须先将行情
-转换为标准长表索引, 返回结果通过 `nav.loc[(date, "BENCH"), "nav"]` 取值。
-数值口径也已变为严格的固定份额买入持有。
+原单列 DataFrame 输出改为日期 Series, 使用 `nav.loc[date]` 取值。
+移除只用于输出 ticker 的 portfolio_ticker 参数；组合名称可在调用方通过
+`nav.rename("BENCH")` 设置, 多组合可用 `pd.concat([nav_a, nav_b], axis=1)` 合并。
+本次返回类型调整保持固定首日成员和份额的计算口径。
 
 ## 完整调用示范
 

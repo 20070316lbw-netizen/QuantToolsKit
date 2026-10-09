@@ -41,10 +41,10 @@ def test_future_returns_matches_manual_formula():
         np.nan,
     ]
 
-    assert result.columns[0] == "forward_return_2_gap_1"
+    assert result.name == "forward_return_2_gap_1"
     assert result.index.names == ["date", "ticker"]
     np.testing.assert_allclose(
-        result.iloc[:, 0].to_numpy(), expected, rtol=1e-12, atol=0.0, equal_nan=True
+        result.to_numpy(), expected, rtol=1e-12, atol=0.0, equal_nan=True
     )
 
 
@@ -52,10 +52,10 @@ def test_future_returns_gap_zero_starts_today():
     """gap=0 时用当天收盘价入场。"""
     result = future_returns(df=_frame(), price_col="close", n_periods=2, gap=0)
 
-    assert result.iloc[0, 0] == pytest.approx(PRICES[2] / PRICES[0] - 1)
-    assert result.iloc[3, 0] == pytest.approx(PRICES[5] / PRICES[3] - 1)
-    assert np.isnan(result.iloc[4, 0])
-    assert np.isnan(result.iloc[5, 0])
+    assert result.iloc[0] == pytest.approx(PRICES[2] / PRICES[0] - 1)
+    assert result.iloc[3] == pytest.approx(PRICES[5] / PRICES[3] - 1)
+    assert np.isnan(result.iloc[4])
+    assert np.isnan(result.iloc[5])
 
 
 def test_future_returns_index_is_sorted():
@@ -73,7 +73,7 @@ def test_future_returns_unsorted_input_matches_sorted_input():
     sorted_df = _frame()
     shuffled = sorted_df.sample(frac=1.0, random_state=42)
 
-    pd.testing.assert_frame_equal(
+    pd.testing.assert_series_equal(
         future_returns(df=shuffled, price_col="close", n_periods=2, gap=1),
         future_returns(df=sorted_df, price_col="close", n_periods=2, gap=1),
     )
@@ -89,10 +89,8 @@ def test_future_returns_does_not_leak_across_tickers():
 
     assert result.index.is_unique
     assert len(result) == len(PRICES) * 2
-    assert result.loc[(DATES[0], "A")].iloc[0] == pytest.approx(
-        PRICES[3] / PRICES[1] - 1
-    )
-    assert result.loc[(DATES[0], "B")].iloc[0] == pytest.approx(
+    assert result.loc[(DATES[0], "A")] == pytest.approx(PRICES[3] / PRICES[1] - 1)
+    assert result.loc[(DATES[0], "B")] == pytest.approx(
         OTHER_PRICES[3] / OTHER_PRICES[1] - 1
     )
     per_ticker = pd.concat(
@@ -101,7 +99,7 @@ def test_future_returns_does_not_leak_across_tickers():
             future_returns(df=second, price_col="close", n_periods=2, gap=1),
         ]
     ).sort_index()
-    pd.testing.assert_frame_equal(result, per_ticker)
+    pd.testing.assert_series_equal(result, per_ticker)
 
 
 def test_future_returns_uses_requested_price_col():
@@ -110,7 +108,7 @@ def test_future_returns_uses_requested_price_col():
 
     result = future_returns(df=df, n_periods=2, gap=1, price_col="adj_close")
 
-    assert result.iloc[0, 0] == pytest.approx(PRICES[3] / PRICES[1] - 1)
+    assert result.iloc[0] == pytest.approx(PRICES[3] / PRICES[1] - 1)
 
 
 def test_future_returns_rejects_frame_without_price_col():
@@ -149,7 +147,7 @@ def test_future_returns_defaults_are_five_periods_one_gap():
     """默认参数是 gap=1、n_periods=5, 名字体现出来。"""
     result = future_returns(df=_frame(), price_col="close")
 
-    assert result.columns[0] == "forward_return_5_gap_1"
+    assert result.name == "forward_return_5_gap_1"
 
 
 def test_historical_return_matches_manual_formula():
@@ -165,10 +163,10 @@ def test_historical_return_matches_manual_formula():
         PRICES[5] / PRICES[3] - 1,
     ]
 
-    assert result.columns[0] == "historical_return_2"
+    assert result.name == "historical_return_2"
     assert result.index.names == ["date", "ticker"]
     np.testing.assert_allclose(
-        result.iloc[:, 0].to_numpy(), expected, rtol=1e-12, atol=0.0, equal_nan=True
+        result.to_numpy(), expected, rtol=1e-12, atol=0.0, equal_nan=True
     )
 
 
@@ -180,10 +178,8 @@ def test_historical_return_does_not_leak_across_tickers():
 
     result = historical_return(df=combined, price_col="close", n_periods=2)
 
-    assert result.loc[(DATES[2], "A")].iloc[0] == pytest.approx(
-        PRICES[2] / PRICES[0] - 1
-    )
-    assert result.loc[(DATES[2], "B")].iloc[0] == pytest.approx(
+    assert result.loc[(DATES[2], "A")] == pytest.approx(PRICES[2] / PRICES[0] - 1)
+    assert result.loc[(DATES[2], "B")] == pytest.approx(
         OTHER_PRICES[2] / OTHER_PRICES[0] - 1
     )
 
@@ -193,14 +189,14 @@ def test_historical_return_uses_requested_price_col():
 
     result = historical_return(df=df, n_periods=2, price_col="adj_close")
 
-    assert result.iloc[2, 0] == pytest.approx(PRICES[2] / PRICES[0] - 1)
+    assert result.iloc[2] == pytest.approx(PRICES[2] / PRICES[0] - 1)
 
 
 def test_historical_return_unsorted_input_matches_sorted_input():
     sorted_df = _frame()
     shuffled = sorted_df.sample(frac=1.0, random_state=3)
 
-    pd.testing.assert_frame_equal(
+    pd.testing.assert_series_equal(
         historical_return(df=shuffled, price_col="close", n_periods=2),
         historical_return(df=sorted_df, price_col="close", n_periods=2),
     )
@@ -222,8 +218,8 @@ def test_historical_return_rejects_non_integer_n_periods(bad):
 def test_returns_default_to_adj_close(function):
     df = _frame().rename(columns={"close": "adj_close"})
     df["close"] = 1.0
-    pd.testing.assert_frame_equal(
+    pd.testing.assert_series_equal(
         function(df=df, n_periods=2),
         function(df=df, n_periods=2, price_col="adj_close"),
     )
-    assert function(df=df, n_periods=2).iloc[:, 0].dropna().ne(0).any()
+    assert function(df=df, n_periods=2).dropna().ne(0).any()

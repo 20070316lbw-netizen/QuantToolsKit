@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 from quanttoolskit.data.transfer_data import to_date_ticker_frame
 from quanttoolskit.performance import buy_and_hold_nav
@@ -28,9 +28,10 @@ def test_simple_bucket_separates_dates_preserves_missing_and_input():
     original = data.copy(deep=True)
     result = simple_bucket(data.iloc[::-1], n_quantiles=2)
     assert result.index.equals(data.index)
-    assert result.columns.tolist() == ["bucket"]
-    assert result.iloc[:4, 0].tolist() == [0, 0, 1, 1]
-    assert result.iloc[4:, 0].isna().all()
+    assert isinstance(result, pd.Series)
+    assert result.name == "bucket"
+    assert result.iloc[:4].tolist() == [0, 0, 1, 1]
+    assert result.iloc[4:].isna().all()
     assert_frame_equal(data, original)
 
 
@@ -52,7 +53,7 @@ def test_vol_bucket_insufficient_layer_ties_missing_and_date_isolation():
     assert result.iloc[:4]["bucket"].notna().all()
     assert pd.isna(result.iloc[4]["bucket"])
     assert result.iloc[5:].isna().all().all()
-    assert simple_bucket(data.assign(score=1), n_quantiles=2).isna().all().all()
+    assert simple_bucket(data.assign(score=1), n_quantiles=2).isna().all()
 
 
 def test_buy_and_hold_fixed_shares_differs_from_daily_rebalancing():
@@ -68,10 +69,14 @@ def test_buy_and_hold_fixed_shares_differs_from_daily_rebalancing():
         ["close"],
     )
     original = data.copy(deep=True)
-    result = buy_and_hold_nav(data.iloc[::-1], 10, portfolio_ticker="BENCH")
-    assert result["nav"].tolist() == [10, 15, 10]
-    assert result.index.names == ["date", "ticker"]
-    assert result.index.get_level_values("ticker").unique().tolist() == ["BENCH"]
+    result = buy_and_hold_nav(data.iloc[::-1], 10)
+    expected = pd.Series(
+        [10.0, 15.0, 10.0],
+        index=pd.date_range("2024-01-01", periods=3, name="date"),
+        name="nav",
+    )
+    assert isinstance(result.index, pd.DatetimeIndex)
+    assert_series_equal(result, expected, check_freq=False, check_index_type=False)
     assert_frame_equal(data, original)
 
 
@@ -90,18 +95,26 @@ def test_benchmark_missing_prices_stays_missing_and_new_members_are_excluded():
         ["adj_close"],
     )
     result = buy_and_hold_nav(data, price_col="adj_close")
-    assert result.iloc[0, 0] == 1
-    assert result.iloc[1:3, 0].isna().all()
-    assert result.iloc[3, 0] == 1.5
+    assert result.iloc[0] == 1
+    assert result.iloc[1:3].isna().all()
+    assert result.iloc[3] == 1.5
 
 
 @pytest.mark.parametrize("func", [simple_bucket, vol_bucket, buy_and_hold_nav])
 def test_input_contract_and_empty_frames(func):
     data = frame([], ["score", "vol", "close"])
     result = func(data)
-    assert isinstance(result, pd.DataFrame)
+    assert isinstance(result, pd.DataFrame if func is vol_bucket else pd.Series)
     assert result.empty
-    assert result.index.equals(data.index)
+    if func is buy_and_hold_nav:
+        assert isinstance(result.index, pd.DatetimeIndex)
+        assert result.index.name == "date" and result.name == "nav"
+    else:
+        assert result.index.equals(data.index)
+        if func is simple_bucket:
+            assert result.name == "bucket"
+        else:
+            assert result.columns.tolist() == ["vol_bucket", "bucket"]
     with pytest.raises(TypeError):
         func(pd.Series(dtype=float))
     with pytest.raises(ValueError):
@@ -140,7 +153,5 @@ def test_missing_columns_nonfinite_and_missing_initial_prices():
         buy_and_hold_nav(data.assign(close=np.inf))
     with pytest.raises(ValueError):
         simple_bucket(data.assign(score=np.inf))
-    with pytest.raises(ValueError):
-        buy_and_hold_nav(data, portfolio_ticker="")
     with pytest.raises(TypeError):
         buy_and_hold_nav(data, True)

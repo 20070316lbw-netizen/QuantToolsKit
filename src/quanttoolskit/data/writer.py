@@ -1,16 +1,26 @@
-"""DuckDB 事务写入：基本面范围替换、当前成员快照替换、行情按主键更新。
+"""DuckDB 事务写入：基本面范围替换、成员替换、Yahoo 行情更新、Qlib 整表替换。
 
-这些函数由 SP500Data 的写入开关调用, 不负责获取数据或选择 universe。
+SP500 写入由 SP500Data 调用, Qlib 写入由调用方显式执行。
+这些函数不负责获取数据或选择 universe。
 各次写入独立提交；成员、行情与基本面之间没有跨方法的大事务。
 任何事务内错误都会回滚并向外抛出, 不能把部分结果当作更新成功。
 """
 
+import re
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from .connection import get_duckdb
-from .schema import CONSTITUENTS_COLUMNS, CONSTITUENTS_DDL, DDL, PRICES_DDL
+from .schema import (
+    CONSTITUENTS_COLUMNS,
+    CONSTITUENTS_DDL,
+    DDL,
+    PRICES_DDL,
+    QLIB_PRICES_CONSTRAINTS,
+)
+from .transfer_data import _validate_frame
 
 
 def save_fundamentals(
@@ -142,6 +152,103 @@ def save_prices(path: Path, prices: pd.DataFrame) -> None:
                 "WHERE prices.ticker=p.ticker AND prices.date=p.date"
             )
             con.execute("INSERT INTO prices BY NAME SELECT * FROM _prices")
+            con.execute("COMMIT")
+        except BaseException:
+            con.execute("ROLLBACK")
+            raise
+
+
+def save_qlib_prices(*, db: str | Path, prices: pd.DataFrame, release_tag: str) -> None:
+    """事务内整表替换 Qlib 行情, 保存上游全部字段与复权数值。
+
+    Args:
+        db: DuckDB 路径, 自动创建父目录；只替换 qlib_prices 表。
+        prices: [date, ticker] MultiIndex DataFrame, 键非空、唯一且有序。
+            date 必须是无时区的日频日期, ticker 为非空字符串。
+            行情列必须是实数数值列, NaN 保留为 SQL NULL, 不填补或复权。
+            保留 float32/float64 的精度, 不接受 release_tag 这一保留列。
+        release_tag: YYYY-MM-DD 格式的具体发布标签, 不接受 latest。
+            应使用与 prices 来源相同的 manifest.release_tag。
+
+    Returns:
+        None。成功后 qlib_prices 只包含此次传入的证券、日期与字段,
+        主键为 (date, ticker), 普通列 release_tag 标记发布版本。
+        不保存另外的处理后快照, 不修改原始来源文件, 不影响 Yahoo prices 表。
+
+    Raises:
+        TypeError: prices 非 DataFrame, 或 release_tag 非字符串。
+        ValueError: 空表、重复/缺失键、盘中时间、字段冲突、非实数列或标签无效。
+        duckdb.Error: 建表或插入失败, 事务回滚并保留旧表。
+
+    Example:
+        >>> import tempfile
+        >>> from quanttoolskit.data import to_date_ticker_frame
+        >>> prices = to_date_ticker_frame(df=pd.DataFrame({
+        ...     "date": ["2024-01-02"], "ticker": ["SH600000"], "close": [1.5],
+        ... }))
+        >>> with tempfile.TemporaryDirectory() as folder:
+        ...     db = Path(folder) / "qlib.duckdb"
+        ...     save_qlib_prices(db=db, prices=prices, release_tag="2026-10-07")
+        ...     with get_duckdb(path=db) as con:
+        ...         row = con.execute(
+        ...             "SELECT close, release_tag FROM qlib_prices"
+        ...         ).fetchone()
+        >>> row
+        (1.5, '2026-10-07')
+    """
+    _validate_frame(prices)
+    if prices.empty or len(prices.columns) == 0:
+        raise ValueError("不能用空行情替换 qlib_prices")
+    if not prices.index.is_monotonic_increasing:
+        raise ValueError("行情索引必须升序排列")
+    dates = prices.index.get_level_values("date")
+    if dates.tz is not None or not dates.equals(dates.normalize()):
+        raise ValueError("date 必须是无时区的日频日期")
+    symbols = prices.index.get_level_values("ticker")
+    if any(not isinstance(s, str) or not s.strip() for s in symbols):
+        raise ValueError("ticker 必须是非空字符串")
+    if not isinstance(release_tag, str):
+        raise TypeError("release_tag 必须是字符串")
+    if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", release_tag):
+        raise ValueError("release_tag 必须是 YYYY-MM-DD")
+    # 标签仅标识来源发布, 不能用行情截止日或 latest 替代。
+    pd.Timestamp(release_tag)
+    names = list(prices.columns)
+    if any(not isinstance(name, str) or not name for name in names):
+        raise ValueError("行情列名必须是非空字符串")
+    lowered = [name.lower() for name in names]
+    if len(set(lowered)) != len(lowered) or set(lowered) & {
+        "date",
+        "ticker",
+        "release_tag",
+    }:
+        raise ValueError("行情列名与索引/来源列冲突")
+    for name in names:
+        dtype = prices[name].dtype
+        if (
+            not pd.api.types.is_numeric_dtype(dtype)
+            or pd.api.types.is_bool_dtype(dtype)
+            or pd.api.types.is_complex_dtype(dtype)
+        ):
+            raise ValueError(f"{name} 必须是实数数值列")
+        if np.isinf(prices[name].dropna().to_numpy()).any():
+            raise ValueError(f"{name} 不能包含无穷值")
+
+    data = prices.reset_index()
+    data["date"] = data["date"].dt.date
+    data["release_tag"] = release_tag
+    with get_duckdb(path=Path(db), read_only=False) as con:
+        con.execute("BEGIN")
+        try:
+            con.register("_qlib_prices", data)
+            # 重建全部列, 新来源没有的字段也不会残留；DDL 与数据同事务回滚。
+            con.execute(
+                "CREATE OR REPLACE TABLE qlib_prices "
+                "AS SELECT * FROM _qlib_prices LIMIT 0"
+            )
+            for statement in QLIB_PRICES_CONSTRAINTS:
+                con.execute(statement)
+            con.execute("INSERT INTO qlib_prices BY NAME SELECT * FROM _qlib_prices")
             con.execute("COMMIT")
         except BaseException:
             con.execute("ROLLBACK")
