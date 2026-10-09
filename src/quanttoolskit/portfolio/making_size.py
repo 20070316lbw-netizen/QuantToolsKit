@@ -43,12 +43,12 @@ def simple_bucket(
 
     Args:
         df: [date, ticker] MultiIndex DataFrame, 包含分数列；不修改输入。
-        score_col: 分数列名, 默认 score；允许缺失值和数值字符串。
+        score_col: 分数列名, 默认 score; 允许缺失值和数值字符串。
         n_quantiles: 每日分桶数量, 默认 5, 必须为正整数, 不接受布尔值。
 
     Returns:
         同输入键、按索引排序的 [date, ticker] Series, name 为 bucket。
-        桶号从 0 开始, 分数越高桶号越高。每日有效样本不足时为 NaN；
+        桶号从 0 开始, 分数越高桶号越高。每日有效样本不足时为 NaN;
         重复分位边界减少实际桶数, 全部分数相同时为 NaN, 不填补缺失值。
         桶号是分组标签, 不表示仓位权重；空输入返回空 Series。
 
@@ -99,7 +99,7 @@ def vol_bucket(
         同输入键、按索引排序的 DataFrame, 列为 vol_bucket 和 bucket。
         两种标签从 0 开始, 分别按波动率和分数递增。
         两列均有效的样本不足 n_vol_groups * n_quantiles 时, 当日全为 NaN。
-        层内样本不足时仅 bucket 为 NaN。重复边界可能减少实际组数；
+        层内样本不足时仅 bucket 为 NaN。重复边界可能减少实际组数;
         不修改输入、不填补缺失值。
 
     Raises:
