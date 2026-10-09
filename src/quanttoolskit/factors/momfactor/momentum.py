@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from quanttoolskit.factors.momfactor.base import momentum
+from quanttoolskit.factors.momfactor.base import cumulative_log_returns
 
 
 def momentum_12_1(
@@ -48,7 +48,7 @@ def momentum_12_1(
         raise TypeError("trading_days_per_month 必须是整数")
     if trading_days_per_month <= 0:
         raise ValueError("trading_days_per_month 必须大于 0")
-    result = momentum(
+    result = cumulative_log_returns(
         df=df,
         window=11 * trading_days_per_month,
         skip=trading_days_per_month,

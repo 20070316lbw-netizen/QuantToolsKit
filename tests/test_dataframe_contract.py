@@ -11,7 +11,7 @@ from quanttoolskit import (
     log_returns,
 )
 from quanttoolskit.data import to_date_ticker_frame
-from quanttoolskit.factors import momentum_12_1
+from quanttoolskit.factors import cumulative_log_returns, momentum_12_1, reversal
 
 FUNCTIONS = [
     future_returns,
@@ -20,6 +20,8 @@ FUNCTIONS = [
     forward_volatility,
     log_returns,
     momentum_12_1,
+    lambda **kwargs: cumulative_log_returns(window=2, **kwargs),
+    reversal,
 ]
 
 

@@ -44,13 +44,14 @@
 buy-and-hold benchmark 固定首日成员与份额, 后续成员不加入,
 缺少固定成员报价时当日净值为 NaN。
 
-**迁移状态**：收益率、波动率、动量、单因子 Z-score、普通分桶、
+**迁移状态**：收益率、波动率、累计对数收益、动量、反转、单因子 Z-score、普通分桶、
 买入持有净值和分位数组示范已同步新返回类型, 包含空结果的名称与索引。
 AGENTS.md 的分位数组代码与可运行源文件一致。
 多因子 Z-score 和带波动分层号的 vol_bucket 继续返回多列 DataFrame。
 
 具体计算口径见 [收益率](returns.md)、[波动率](volatility.md)、
-[动量因子](momentum.md)、[indicators](../src/quanttoolskit/indicators/README.md)、
+[累计对数收益与动量](momentum.md)、[反转因子](reversal.md)、
+[indicators](../src/quanttoolskit/indicators/README.md)、
 [portfolio](../src/quanttoolskit/portfolio/README.md) 和
 [performance](../src/quanttoolskit/performance/README.md)。
 Qlib 社区行情的下载、转换与入库见 [使用说明](qlib-community-integration.md)。

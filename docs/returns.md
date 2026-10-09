@@ -42,6 +42,10 @@ daily_log = log_returns(df=prices)
 - 期数按每只股票自己的交易记录计数, 不跨股票取值, 不自动补齐交易日。
 - `log_returns` 返回对数收益, 每只股票首行或相邻任一价格缺失时为 NaN；
   [动量因子](momentum.md) 累计这类单期收益。
+- 多期累计对数收益使用 `quanttoolskit.factors.cumulative_log_returns`,
+  如 `cumulative_log_returns(prices, window=63, skip=0)`；目前与动量共用接口。
+  window=1、skip=0 时数值与 log_returns 相同, 但输出名称不同。
+  详见 [累计对数收益与动量](momentum.md), 窗口内部缺失会导致 NaN。
 - 简单收益率以小数表示；历史或未来记录不足、端点价格缺失时为 NaN, 不填补价格。
 - 重复键、缺失日期或 ticker、非正价格会明确报错；价格校验由内部
   `validate_prices` 完成。长表必须先用 `to_date_ticker_frame` 转换。

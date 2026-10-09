@@ -19,7 +19,7 @@
 | [returns](docs/returns.md) | 简单与对数收益率：历史特征与未来标签 | 已实现 |
 | [volatility](docs/volatility.md) | 滚动波动率：历史波动特征与未来波动标签 | 已实现 |
 | [indicators](src/quanttoolskit/indicators/README.md) | 因子逐日横截面 Z-score 标准化 | 已实现 |
-| [factors](src/quanttoolskit/factors/README.md) | 滚动对数动量、经典 12-1 动量 | 已实现 |
+| [factors](src/quanttoolskit/factors/README.md) | 窗口累计对数收益、经典 12-1 动量、短期反转 | 已实现 |
 | [portfolio](src/quanttoolskit/portfolio/README.md) | 每日横截面分桶、波动率分层分桶 | 已实现 |
 | [performance](src/quanttoolskit/performance/README.md) | 期初等权买入持有基准净值 | 已实现 |
 | [plotting](src/quanttoolskit/plotting/README.md) | 绘图 | 占位 |

@@ -7,6 +7,10 @@
 
 | 模块 | 公开接口 | 使用说明 |
 | --- | --- | --- |
-| `momfactor` | `momentum`、`momentum_12_1` | [动量因子](../../../docs/momentum.md) |
+| `momfactor` | `cumulative_log_returns`、`momentum_12_1`、兼容接口 `momentum` | [累计对数收益与动量](../../../docs/momentum.md) |
+| `reversal` | `reversal` | [短期反转因子](../../../docs/reversal.md) |
 
-公开接口可从 `quanttoolskit.factors` 或 `quanttoolskit.factors.momfactor` 导入。
+公开接口可从 `quanttoolskit.factors` 或对应子包导入。
+`cumulative_log_returns` 可计算窗口累计对数收益率, 也可作为动量特征。
+自包含的 [可运行示范](../../../examples/return_factors.py) 包含收益、反转、
+横截面标准化与分桶。
