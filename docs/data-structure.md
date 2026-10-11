@@ -37,8 +37,10 @@
 需要将计算结果附加到行情表时, 使用 `prices.join(result)`;需要把多个结果
 组成多列数据时, 在调用方使用 `pd.concat([factor_a, factor_b], axis=1)`。
 单一组合 benchmark 使用 `nav.loc[date]`, 不再传入 portfolio_ticker, 如需组合名称可在调用方 rename。
-`set_datetime_index` 保留函数名, 仍要求 ticker 并返回双层索引 DataFrame,
-新代码使用 `to_date_ticker_frame`。
+旧 `set_datetime_index` 与 preprocessing 模块已移除, 使用 `to_date_ticker_frame`。
+单因子已是标准 Series, 无需再次 stack;
+`factors.engine.to_panel(factor, name)` 仅校验索引、排序和重命名,
+保留缺失记录与 NaN, 不接收或转换宽表。
 
 返回类型的调整不改变计算口径。横截面标准化仍按 date 逐列计算,
 使用样本标准差 `ddof=1`;缺失、零标准差或有效样本不足时输出 NaN。

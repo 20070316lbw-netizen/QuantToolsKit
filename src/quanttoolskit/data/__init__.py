@@ -1,7 +1,6 @@
 """量化数据获取、入库、查询与预处理的公开接口。"""
 
 from .connection import get_duckdb
-from .preprocessing import set_datetime_index
 from .readers.constituents import load_constituents
 from .readers.fundamentals import (
     load_fundamentals,
@@ -31,7 +30,6 @@ __all__ = [
     "prepare_members",
     "read_qlib_prices",
     "save_qlib_prices",
-    "set_datetime_index",
     "to_date_ticker_frame",
     "validate_prices",
 ]

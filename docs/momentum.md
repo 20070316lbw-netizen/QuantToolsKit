@@ -30,6 +30,46 @@ features = pd.concat([custom, classic], axis=1)
 自包含的 [可运行示范](../examples/return_factors.py) 展示累计收益、反转、
 横截面标准化和分桶, 不依赖本地数据库。
 
+### 按注册表试跑
+
+注册表从 `quanttoolskit.factors.momfactor` 导入, 键为 `momentum_12_1`。
+取出的是函数, 使用关键字 `df=prices` 调用后才得到因子 Series:
+
+```python
+from quanttoolskit.factors.momfactor import MOM_FACTORS
+from quanttoolskit.indicators import zscore_by_date
+
+factor_fn = MOM_FACTORS["momentum_12_1"]
+factor_result = factor_fn(df=prices)
+print(factor_result)
+scores = zscore_by_date(factor_result.to_frame())
+```
+
+不要打印 `factor_fn` 来查看计算结果。单因子已经是 `[date, ticker]` Series,
+无需 `stack()` 或重新设置索引名称; 多因子直接用 `pd.concat(..., axis=1)`。
+`quanttoolskit.factors.engine.to_panel(factor, name)` 可用于校验、排序和重命名
+已有 Series, 保留所有 NaN, 不接收宽表。
+
+[注册表调用示范](../examples/momentum_12_1.py) 自带 13 条记录、2 只证券的行情,
+每月近似为 1 条记录以缩短示范, 最后一天因子为 `11*log(2)` 和 `-11*log(2)`,
+标准化后约为 `0.707107` 和 `-0.707107`:
+
+```bash
+uv run python examples/momentum_12_1.py
+```
+
+使用本地数据库试跑默认参数, 可继续运行原来的入口:
+
+```bash
+uv run python src/quanttoolskit/factors/engine.py
+# 默认读取项目 data/sp500.db, 也可指定其他数据库。
+uv run python src/quanttoolskit/factors/engine.py --db /path/to/prices.db
+```
+
+该入口使用 `load_prices` 只读数据库, 经过 `to_date_ticker_frame` 后计算,
+打印结果及总记录数、有效因子数。默认每月 21 条记录, 每只证券前 252 条
+因子为 NaN, 首次有效值需要 253 条价格记录。
+
 `cumulative_log_returns` 既能计算窗口累计对数收益率, 也能构造动量特征,
 目前共用 factors 下的同一接口。window=1、skip=0 时数值与
 `quanttoolskit.log_returns` 相同；函数使用滚动窗口, 不从序列首日累计。
@@ -68,6 +108,7 @@ features = pd.concat([custom, classic], axis=1)
 验证见 [test_cumulative_log_returns.py](../tests/test_cumulative_log_returns.py)、
 [test_momentum.py](../tests/test_momentum.py) 和
 [test_dataframe_contract.py](../tests/test_dataframe_contract.py)。
+注册表、Series 处理与数据库试跑见 [test_factor_engine.py](../tests/test_factor_engine.py)。
 
 ## 返回类型迁移
 
